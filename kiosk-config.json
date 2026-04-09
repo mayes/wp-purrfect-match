@@ -1,0 +1,98 @@
+{
+  "_comment": "CJ Paws and Whiskers - Kiosk Configuration",
+  "_instructions": "Edit this file before running setup-kiosk.ps1. All URLs must use HTTPS.",
+
+  "kioskAccount": {
+    "username": "CJPawsKiosk",
+    "description": "CJ Paws and Whiskers Public Kiosk Account",
+    "passwordLength": 32
+  },
+
+  "chrome": {
+    "installPath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "kioskHomepage": "https://cjpaws.org/",
+    "whitelistedUrls": [
+      "https://cjpaws.org",
+      "https://*.cjpaws.org",
+      "https://thewhiskersoasis.com",
+      "https://*.thewhiskersoasis.com",
+      "https://whiskersworkspace.com",
+      "https://*.whiskersworkspace.com"
+    ],
+    "blockedUrls": ["*"],
+    "clearDataOnRestart": true,
+    "disableDevTools": true,
+    "disableIncognito": true,
+    "disablePasswordManager": true,
+    "disableAutofillAddresses": true,
+    "disableAutofillCreditCards": true,
+    "disablePrinting": true,
+    "disableDownloads": true,
+    "disableExtensions": true,
+    "disableBookmarks": true,
+    "disableBrowserHistory": true
+  },
+
+  "security": {
+    "disableUsbStorage": true,
+    "blockSystemShortcuts": true,
+    "blockTaskManager": true,
+    "blockCmd": true,
+    "blockPowerShell": true,
+    "blockRegedit": true,
+    "blockControlPanel": true,
+    "blockSettingsApp": true,
+    "blockRunDialog": true,
+    "disableRightClickDesktop": true,
+    "hideDesktopIcons": true,
+    "lockTaskbar": true
+  },
+
+  "firewall": {
+    "enableDomainWhitelist": true,
+    "allowedDomains": [
+      "cjpaws.org",
+      "thewhiskersoasis.com",
+      "whiskersworkspace.com",
+      "clients1.google.com",
+      "update.googleapis.com",
+      "accounts.google.com",
+      "www.gstatic.com"
+    ],
+    "allowDns": true,
+    "allowDhcp": true,
+    "blockAllOutboundByDefault": true
+  },
+
+  "watchdog": {
+    "enabled": true,
+    "checkIntervalSeconds": 10,
+    "restartDelaySeconds": 2
+  },
+
+  "inactivity": {
+    "enabled": true,
+    "timeoutMinutes": 5,
+    "resetToHomepage": true,
+    "clearDataOnReset": true
+  },
+
+  "display": {
+    "screenTimeoutMinutes": 15,
+    "preventSleep": true,
+    "preventScreensaver": true
+  },
+
+  "windowsUpdate": {
+    "restrictToActiveHours": true,
+    "activeHoursStart": 8,
+    "activeHoursEnd": 20,
+    "preventRebootDuringActiveHours": true
+  },
+
+  "logging": {
+    "logDirectory": "C:\\KioskLogs",
+    "logRetentionDays": 30,
+    "verboseLogging": true
+  }
+}
