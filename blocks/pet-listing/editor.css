@@ -1,0 +1,88 @@
+/* Gutenberg editor styles for Purrfect Match block */
+
+.wp-block-purrfect-match-pet-listing {
+	border: 1px dashed #ccc;
+	border-radius: 8px;
+	padding: 20px;
+}
+
+.pm-block-placeholder {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px 20px;
+	text-align: center;
+	color: #666;
+}
+
+.pm-block-placeholder__icon {
+	font-size: 48px;
+	margin-bottom: 12px;
+}
+
+.pm-block-placeholder__title {
+	font-size: 1.2em;
+	font-weight: 600;
+	margin: 0 0 8px;
+}
+
+.pm-block-placeholder__text {
+	font-size: 0.9em;
+	margin: 0;
+	color: #999;
+}
+
+.pm-block-placeholder__link {
+	display: inline-block;
+	margin-top: 12px;
+	padding: 8px 16px;
+	background: #6C63FF;
+	color: #fff;
+	border-radius: 6px;
+	text-decoration: none;
+	font-size: 0.85em;
+	font-weight: 500;
+}
+
+.pm-block-placeholder__link:hover {
+	background: #5A52E0;
+	color: #fff;
+}
+
+.pm-block-preview {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16px;
+}
+
+.pm-block-preview__card {
+	background: #f8f9fa;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.pm-block-preview__image {
+	width: 100%;
+	height: 120px;
+	background: #e0e0e0;
+}
+
+.pm-block-preview__body {
+	padding: 12px;
+}
+
+.pm-block-preview__name {
+	height: 14px;
+	width: 60%;
+	background: #d0d0d0;
+	border-radius: 4px;
+	margin-bottom: 8px;
+}
+
+.pm-block-preview__meta {
+	height: 10px;
+	width: 80%;
+	background: #e0e0e0;
+	border-radius: 4px;
+}

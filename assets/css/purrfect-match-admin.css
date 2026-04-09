@@ -1,0 +1,58 @@
+.pm-admin {
+	max-width: 800px;
+}
+
+.pm-admin h1 {
+	font-size: 1.8em;
+	margin-bottom: 1em;
+}
+
+.pm-admin .form-table th {
+	width: 200px;
+}
+
+.pm-admin__actions {
+	margin-top: 2em;
+	padding: 1.5em;
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 4px;
+}
+
+.pm-admin__actions .button {
+	margin-right: 0.5em;
+}
+
+.pm-admin__result {
+	display: inline-block;
+	padding: 4px 10px;
+	border-radius: 3px;
+	font-size: 13px;
+	vertical-align: middle;
+}
+
+.pm-admin__result--success {
+	background: #d4edda;
+	color: #155724;
+}
+
+.pm-admin__result--error {
+	background: #f8d7da;
+	color: #721c24;
+}
+
+.pm-admin__usage {
+	margin-top: 2em;
+	padding: 1.5em;
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 4px;
+}
+
+.pm-admin__usage code {
+	display: inline-block;
+	padding: 6px 12px;
+	background: #f0f0f1;
+	border-radius: 3px;
+	font-size: 13px;
+}

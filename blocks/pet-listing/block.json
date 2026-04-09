@@ -1,0 +1,56 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "purrfect-match/pet-listing",
+	"version": "1.0.0",
+	"title": "Purrfect Match",
+	"category": "widgets",
+	"icon": "heart",
+	"description": "Display adoptable cats from your rescue organization with filtering, favorites, and social sharing.",
+	"keywords": [ "pets", "cats", "adoption", "rescue", "animals", "petfinder" ],
+	"textdomain": "purrfect-match",
+	"attributes": {
+		"layout": {
+			"type": "string",
+			"default": "grid"
+		},
+		"perPage": {
+			"type": "number",
+			"default": 12
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"showFilters": {
+			"type": "boolean",
+			"default": true
+		},
+		"showSearch": {
+			"type": "boolean",
+			"default": true
+		},
+		"breed": {
+			"type": "string",
+			"default": ""
+		},
+		"age": {
+			"type": "string",
+			"default": ""
+		},
+		"gender": {
+			"type": "string",
+			"default": ""
+		},
+		"size": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"align": [ "wide", "full" ],
+		"html": false
+	},
+	"editorStyle": "file:./editor.css",
+	"render": "file:./render.php"
+}

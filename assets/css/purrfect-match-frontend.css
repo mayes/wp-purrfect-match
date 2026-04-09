@@ -1,0 +1,878 @@
+/* ==========================================================================
+   Purrfect Match — Frontend Styles
+   A modern, accessible pet listing widget.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CSS Custom Properties (Design Tokens)
+   -------------------------------------------------------------------------- */
+.pm-container {
+	--pm-primary: #6C63FF;
+	--pm-primary-hover: color-mix(in srgb, var(--pm-primary) 85%, #000);
+	--pm-primary-light: color-mix(in srgb, var(--pm-primary) 12%, #fff);
+	--pm-secondary: #FF6B6B;
+	--pm-bg: #F8F9FA;
+	--pm-card-bg: #FFFFFF;
+	--pm-text: #2D3436;
+	--pm-text-light: #636E72;
+	--pm-text-lighter: #B2BEC3;
+	--pm-border: #E0E0E0;
+	--pm-radius: 12px;
+	--pm-radius-sm: 8px;
+	--pm-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	--pm-shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.12);
+	--pm-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	--pm-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	--pm-gap: 24px;
+
+	font-family: var(--pm-font);
+	color: var(--pm-text);
+	line-height: 1.5;
+	container-type: inline-size;
+	container-name: pm;
+}
+
+/* --------------------------------------------------------------------------
+   2. Filter Bar
+   -------------------------------------------------------------------------- */
+.pm-filters {
+	margin-bottom: var(--pm-gap);
+	padding: 20px;
+	background: var(--pm-card-bg);
+	border-radius: var(--pm-radius);
+	box-shadow: var(--pm-shadow);
+}
+
+.pm-filters__search {
+	position: relative;
+	margin-bottom: 16px;
+}
+
+.pm-filters__input {
+	width: 100%;
+	padding: 12px 16px 12px 44px;
+	border: 2px solid var(--pm-border);
+	border-radius: var(--pm-radius-sm);
+	font-family: var(--pm-font);
+	font-size: 1rem;
+	color: var(--pm-text);
+	background: var(--pm-bg);
+	transition: border-color var(--pm-transition);
+	box-sizing: border-box;
+}
+
+.pm-filters__input:focus {
+	outline: none;
+	border-color: var(--pm-primary);
+	box-shadow: 0 0 0 3px var(--pm-primary-light);
+}
+
+.pm-filters__input::placeholder {
+	color: var(--pm-text-lighter);
+}
+
+.pm-filters__search-icon {
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--pm-text-lighter);
+	pointer-events: none;
+}
+
+.pm-filters__groups {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+}
+
+.pm-filters__group {
+	border: none;
+	padding: 0;
+	margin: 0;
+	min-inline-size: auto;
+}
+
+.pm-filters__label {
+	display: block;
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--pm-text-light);
+	margin-bottom: 6px;
+}
+
+.pm-filters__pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.pm-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 14px;
+	border: 2px solid var(--pm-border);
+	border-radius: 100px;
+	background: var(--pm-card-bg);
+	font-family: var(--pm-font);
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: var(--pm-text-light);
+	cursor: pointer;
+	transition: all var(--pm-transition);
+	white-space: nowrap;
+}
+
+.pm-pill:hover {
+	border-color: var(--pm-primary);
+	color: var(--pm-primary);
+}
+
+.pm-pill:focus-visible {
+	outline: 2px solid var(--pm-primary);
+	outline-offset: 2px;
+}
+
+.pm-pill.is-active {
+	background: var(--pm-primary);
+	border-color: var(--pm-primary);
+	color: #fff;
+}
+
+.pm-pill--favorites.has-favorites {
+	border-color: var(--pm-secondary);
+	color: var(--pm-secondary);
+}
+
+.pm-pill--favorites.is-active {
+	background: var(--pm-secondary);
+	border-color: var(--pm-secondary);
+	color: #fff;
+}
+
+.pm-filters__select {
+	padding: 6px 12px;
+	border: 2px solid var(--pm-border);
+	border-radius: var(--pm-radius-sm);
+	font-family: var(--pm-font);
+	font-size: 0.85rem;
+	color: var(--pm-text);
+	background: var(--pm-card-bg);
+	cursor: pointer;
+	transition: border-color var(--pm-transition);
+}
+
+.pm-filters__select:focus-visible {
+	outline: 2px solid var(--pm-primary);
+	outline-offset: 2px;
+}
+
+.pm-filters__reset {
+	padding: 6px 14px;
+	border: none;
+	border-radius: 100px;
+	background: transparent;
+	font-family: var(--pm-font);
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: var(--pm-text-lighter);
+	cursor: pointer;
+	transition: color var(--pm-transition);
+}
+
+.pm-filters__reset:hover {
+	color: var(--pm-secondary);
+}
+
+.pm-filters__reset:focus-visible {
+	outline: 2px solid var(--pm-primary);
+	outline-offset: 2px;
+}
+
+.pm-filters__count {
+	margin-top: 12px;
+	font-size: 0.85rem;
+	color: var(--pm-text-light);
+	min-height: 1.5em;
+}
+
+/* --------------------------------------------------------------------------
+   3. Pet Card Grid
+   -------------------------------------------------------------------------- */
+.pm-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: var(--pm-gap);
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+/* Column override via data attribute */
+.pm-container[data-columns="2"] .pm-grid {
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.pm-container[data-columns="4"] .pm-grid {
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* List layout */
+.pm-container[data-layout="list"] .pm-grid {
+	grid-template-columns: 1fr;
+}
+
+.pm-container[data-layout="list"] .pm-card {
+	display: grid;
+	grid-template-columns: 240px 1fr;
+}
+
+.pm-container[data-layout="list"] .pm-card__image-wrapper {
+	aspect-ratio: 4 / 3;
+}
+
+/* --------------------------------------------------------------------------
+   4. Pet Card
+   -------------------------------------------------------------------------- */
+.pm-card {
+	position: relative;
+	background: var(--pm-card-bg);
+	border-radius: var(--pm-radius);
+	box-shadow: var(--pm-shadow);
+	overflow: hidden;
+	cursor: pointer;
+	transition: transform var(--pm-transition), box-shadow var(--pm-transition);
+	animation: pm-fadeIn 0.4s ease-out both;
+}
+
+.pm-card:hover {
+	transform: translateY(-4px);
+	box-shadow: var(--pm-shadow-hover);
+}
+
+.pm-card:focus-visible {
+	outline: 3px solid var(--pm-primary);
+	outline-offset: 2px;
+}
+
+.pm-card.is-hidden {
+	display: none;
+}
+
+.pm-card__image-wrapper {
+	position: relative;
+	aspect-ratio: 4 / 3;
+	overflow: hidden;
+	background: var(--pm-bg);
+}
+
+.pm-card__image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.5s ease, opacity 0.4s ease;
+	opacity: 0.6;
+}
+
+.pm-card__image.pm-loaded {
+	opacity: 1;
+}
+
+.pm-card:hover .pm-card__image.pm-loaded {
+	transform: scale(1.05);
+}
+
+.pm-card__favorite {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.9);
+	backdrop-filter: blur(4px);
+	color: var(--pm-text-lighter);
+	cursor: pointer;
+	transition: all var(--pm-transition);
+	z-index: 2;
+}
+
+.pm-card__favorite:hover {
+	background: #fff;
+	color: var(--pm-secondary);
+	transform: scale(1.1);
+}
+
+.pm-card__favorite:focus-visible {
+	outline: 2px solid var(--pm-primary);
+	outline-offset: 2px;
+}
+
+.pm-card__favorite.is-favorited {
+	color: var(--pm-secondary);
+}
+
+.pm-card__favorite.is-favorited .pm-icon-heart {
+	fill: var(--pm-secondary);
+	stroke: var(--pm-secondary);
+	animation: pm-heartPop 0.3s ease;
+}
+
+.pm-card__body {
+	padding: 16px;
+}
+
+.pm-card__name {
+	margin: 0 0 4px;
+	font-size: 1.2rem;
+	font-weight: 700;
+	color: var(--pm-text);
+	line-height: 1.3;
+}
+
+.pm-card__breed {
+	margin: 0 0 4px;
+	font-size: 0.9rem;
+	color: var(--pm-text-light);
+}
+
+.pm-card__meta {
+	margin: 0 0 10px;
+	font-size: 0.82rem;
+	color: var(--pm-text-lighter);
+}
+
+.pm-card__separator {
+	margin: 0 4px;
+}
+
+.pm-card__badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   5. Compatibility Badges
+   -------------------------------------------------------------------------- */
+.pm-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	padding: 3px 10px;
+	border-radius: 100px;
+	font-size: 0.72rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.pm-badge svg {
+	flex-shrink: 0;
+}
+
+.pm-badge--cats {
+	background: #E8F5E9;
+	color: #2E7D32;
+}
+
+.pm-badge--dogs {
+	background: #E3F2FD;
+	color: #1565C0;
+}
+
+.pm-badge--kids {
+	background: #FFF3E0;
+	color: #E65100;
+}
+
+/* --------------------------------------------------------------------------
+   6. Modal / Lightbox
+   -------------------------------------------------------------------------- */
+.pm-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	animation: pm-fadeIn 0.2s ease-out;
+}
+
+.pm-modal[hidden] {
+	display: none;
+}
+
+.pm-modal__backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	backdrop-filter: blur(4px);
+}
+
+.pm-modal__content {
+	position: relative;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	width: 100%;
+	max-width: 900px;
+	max-height: 90vh;
+	background: var(--pm-card-bg);
+	border-radius: var(--pm-radius);
+	box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+	overflow: hidden;
+	animation: pm-slideUp 0.3s ease-out;
+}
+
+.pm-modal__close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.9);
+	backdrop-filter: blur(4px);
+	color: var(--pm-text);
+	cursor: pointer;
+	z-index: 2;
+	transition: all var(--pm-transition);
+}
+
+.pm-modal__close:hover {
+	background: #fff;
+	transform: scale(1.1);
+}
+
+.pm-modal__close:focus-visible {
+	outline: 2px solid var(--pm-primary);
+	outline-offset: 2px;
+}
+
+.pm-modal__gallery {
+	display: flex;
+	flex-direction: column;
+	background: var(--pm-bg);
+	overflow: hidden;
+}
+
+.pm-modal__photo {
+	width: 100%;
+	flex: 1;
+	object-fit: cover;
+	min-height: 200px;
+}
+
+.pm-modal__thumbnails {
+	display: flex;
+	gap: 4px;
+	padding: 8px;
+	overflow-x: auto;
+	background: var(--pm-card-bg);
+}
+
+.pm-modal__thumb {
+	flex-shrink: 0;
+	width: 60px;
+	height: 60px;
+	object-fit: cover;
+	border-radius: 6px;
+	cursor: pointer;
+	border: 2px solid transparent;
+	transition: border-color var(--pm-transition);
+	opacity: 0.7;
+}
+
+.pm-modal__thumb:hover,
+.pm-modal__thumb.is-active {
+	border-color: var(--pm-primary);
+	opacity: 1;
+}
+
+.pm-modal__details {
+	padding: 32px;
+	overflow-y: auto;
+}
+
+.pm-modal__name {
+	margin: 0 0 4px;
+	font-size: 1.8rem;
+	font-weight: 700;
+	color: var(--pm-text);
+}
+
+.pm-modal__breed {
+	margin: 0 0 12px;
+	font-size: 1rem;
+	color: var(--pm-text-light);
+}
+
+.pm-modal__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.pm-modal__meta-item {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 12px;
+	background: var(--pm-bg);
+	border-radius: 100px;
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: var(--pm-text-light);
+}
+
+.pm-modal__badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.pm-modal__attributes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.pm-attr {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 12px;
+	border-radius: 100px;
+	font-size: 0.8rem;
+	font-weight: 500;
+}
+
+.pm-attr--yes {
+	background: #E8F5E9;
+	color: #2E7D32;
+}
+
+.pm-attr--special {
+	background: #FFF3E0;
+	color: #E65100;
+}
+
+.pm-modal__tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 16px;
+}
+
+.pm-tag {
+	padding: 3px 10px;
+	background: var(--pm-primary-light);
+	color: var(--pm-primary);
+	border-radius: 100px;
+	font-size: 0.78rem;
+	font-weight: 500;
+}
+
+.pm-modal__description {
+	margin-bottom: 24px;
+	font-size: 0.95rem;
+	line-height: 1.7;
+	color: var(--pm-text);
+}
+
+.pm-modal__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-bottom: 20px;
+}
+
+/* --------------------------------------------------------------------------
+   7. Buttons
+   -------------------------------------------------------------------------- */
+.pm-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 12px 28px;
+	border: none;
+	border-radius: var(--pm-radius-sm);
+	font-family: var(--pm-font);
+	font-size: 1rem;
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+	transition: all var(--pm-transition);
+}
+
+.pm-btn:focus-visible {
+	outline: 2px solid var(--pm-primary);
+	outline-offset: 2px;
+}
+
+.pm-btn--primary {
+	background: var(--pm-primary);
+	color: #fff;
+}
+
+.pm-btn--primary:hover {
+	background: var(--pm-primary-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pm-btn--secondary {
+	background: var(--pm-bg);
+	color: var(--pm-text);
+}
+
+.pm-btn--secondary:hover {
+	background: var(--pm-border);
+}
+
+/* --------------------------------------------------------------------------
+   8. Social Share Buttons
+   -------------------------------------------------------------------------- */
+.pm-modal__share {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding-top: 16px;
+	border-top: 1px solid var(--pm-border);
+}
+
+.pm-modal__share-label {
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: var(--pm-text-light);
+}
+
+.pm-share-btn {
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid var(--pm-border);
+	border-radius: 50%;
+	background: var(--pm-card-bg);
+	color: var(--pm-text-light);
+	cursor: pointer;
+	transition: all var(--pm-transition);
+}
+
+.pm-share-btn:hover {
+	border-color: var(--pm-primary);
+	color: var(--pm-primary);
+	transform: scale(1.1);
+}
+
+.pm-share-btn:focus-visible {
+	outline: 2px solid var(--pm-primary);
+	outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   9. Empty State
+   -------------------------------------------------------------------------- */
+.pm-empty {
+	text-align: center;
+	padding: 60px 20px;
+	color: var(--pm-text-light);
+}
+
+.pm-empty__icon {
+	margin-bottom: 16px;
+	color: var(--pm-text-lighter);
+}
+
+.pm-empty__title {
+	margin: 0 0 8px;
+	font-size: 1.3rem;
+	font-weight: 600;
+	color: var(--pm-text);
+}
+
+.pm-empty__text {
+	margin: 0;
+	font-size: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   10. Error State
+   -------------------------------------------------------------------------- */
+.pm-error {
+	padding: 16px 20px;
+	background: #f8d7da;
+	border: 1px solid #f5c6cb;
+	border-radius: var(--pm-radius-sm);
+	color: #721c24;
+	font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------------------------
+   11. Animations
+   -------------------------------------------------------------------------- */
+@keyframes pm-fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes pm-slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes pm-heartPop {
+	0% { transform: scale(1); }
+	50% { transform: scale(1.3); }
+	100% { transform: scale(1); }
+}
+
+/* Staggered card entrance */
+.pm-card:nth-child(1)  { animation-delay: 0s; }
+.pm-card:nth-child(2)  { animation-delay: 0.05s; }
+.pm-card:nth-child(3)  { animation-delay: 0.1s; }
+.pm-card:nth-child(4)  { animation-delay: 0.15s; }
+.pm-card:nth-child(5)  { animation-delay: 0.2s; }
+.pm-card:nth-child(6)  { animation-delay: 0.25s; }
+.pm-card:nth-child(7)  { animation-delay: 0.3s; }
+.pm-card:nth-child(8)  { animation-delay: 0.35s; }
+.pm-card:nth-child(9)  { animation-delay: 0.4s; }
+.pm-card:nth-child(10) { animation-delay: 0.45s; }
+.pm-card:nth-child(11) { animation-delay: 0.5s; }
+.pm-card:nth-child(12) { animation-delay: 0.55s; }
+
+/* --------------------------------------------------------------------------
+   12. Reduced Motion
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+	.pm-card,
+	.pm-modal,
+	.pm-modal__content {
+		animation: none;
+	}
+
+	.pm-card,
+	.pm-card__image,
+	.pm-card__favorite,
+	.pm-card__favorite .pm-icon-heart,
+	.pm-pill,
+	.pm-btn,
+	.pm-share-btn,
+	.pm-modal__close,
+	.pm-modal__thumb,
+	.pm-filters__input {
+		transition: none;
+	}
+}
+
+/* --------------------------------------------------------------------------
+   13. Container Queries (Responsive)
+   -------------------------------------------------------------------------- */
+@container pm (max-width: 500px) {
+	.pm-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.pm-modal__content {
+		grid-template-columns: 1fr;
+		max-height: 95vh;
+	}
+
+	.pm-modal__gallery {
+		max-height: 40vh;
+	}
+
+	.pm-modal__details {
+		padding: 20px;
+	}
+
+	.pm-modal__name {
+		font-size: 1.4rem;
+	}
+
+	.pm-filters__groups {
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.pm-container[data-layout="list"] .pm-card {
+		grid-template-columns: 1fr;
+	}
+}
+
+@container pm (min-width: 501px) and (max-width: 700px) {
+	.pm-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+/* --------------------------------------------------------------------------
+   14. Fallback Media Queries (browsers without container query support)
+   -------------------------------------------------------------------------- */
+@supports not (container-type: inline-size) {
+	@media (max-width: 500px) {
+		.pm-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.pm-modal__content {
+			grid-template-columns: 1fr;
+		}
+
+		.pm-filters__groups {
+			flex-direction: column;
+		}
+
+		.pm-container[data-layout="list"] .pm-card {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (min-width: 501px) and (max-width: 700px) {
+		.pm-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+}
+
+/* --------------------------------------------------------------------------
+   15. Screen Reader Only Utility
+   -------------------------------------------------------------------------- */
+.screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
