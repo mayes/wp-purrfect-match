@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Petfinder GraphQL Explorer</title>
+<style>
+  :root { --pink:#e93396; --ink:#18181b; --line:rgba(0,0,0,.12); --bg:#faf7f9; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:14px 18px; background:linear-gradient(120deg,#fdf2f8,#fff 60%,#fdf4ff); border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:16px; font-weight:900; }
+  header p { margin:4px 0 0; font-size:12px; color:rgba(0,0,0,.6); }
+  .endpoint { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .endpoint input { flex:1; min-width:280px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; font:12px monospace; background:#fff; }
+  main { display:grid; grid-template-columns:1fr 1fr; gap:0; height:calc(100vh - 132px); }
+  @media (max-width:900px){ main{ grid-template-columns:1fr; height:auto; } }
+  .pane { display:flex; flex-direction:column; min-height:0; border-right:1px solid var(--line); }
+  .pane:last-child { border-right:0; }
+  .pane h2 { margin:0; padding:8px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:rgba(0,0,0,.55); background:#fff; border-bottom:1px solid var(--line); }
+  textarea { flex:1; width:100%; border:0; padding:12px; font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; resize:none; background:#fff; color:#0b1021; }
+  textarea:focus { outline:2px solid color-mix(in srgb, var(--pink) 35%, transparent); outline-offset:-2px; }
+  #vars { flex:0 0 132px; border-top:1px solid var(--line); }
+  .out { flex:1; margin:0; padding:12px; overflow:auto; background:#0b1021; color:#e6e6e6; font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace; white-space:pre-wrap; word-break:break-word; }
+  .bar { display:flex; gap:8px; align-items:center; padding:8px 12px; background:#fff; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  button { cursor:pointer; border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 11px; font-size:12px; font-weight:700; }
+  button:hover { border-color:color-mix(in srgb, var(--pink) 50%, var(--line)); }
+  button.run { background:var(--pink); color:#fff; border-color:var(--pink); }
+  .presets { padding:8px 12px; background:#fff; border-bottom:1px solid var(--line); display:flex; gap:6px; flex-wrap:wrap; }
+  .presets b { width:100%; font-size:11px; color:rgba(0,0,0,.5); font-weight:700; }
+  .presets button { font-size:11.5px; padding:5px 9px; font-weight:600; }
+  .status { font-size:12px; color:rgba(0,0,0,.6); margin-left:auto; }
+  .status.err { color:#c0143c; font-weight:700; }
+  .status.ok { color:#0a7d33; font-weight:700; }
+  .hint { padding:8px 12px; font-size:11.5px; color:rgba(0,0,0,.6); background:#fff; border-top:1px solid var(--line); }
+  code { background:rgba(233,51,150,.1); padding:1px 4px; border-radius:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🐾 Petfinder GraphQL Explorer</h1>
+  <p>Runs live from <strong>your browser</strong> (which passes Akamai). Sends <code>Content-Type: application/json</code>, the same way the widget does. No key required.</p>
+  <div class="endpoint">
+    <label style="font-size:12px;font-weight:700">Endpoint</label>
+    <input id="endpoint" value="https://psl.petfinder.com/graphql" spellcheck="false" />
+  </div>
+</header>
+
+<div class="presets">
+  <b>Presets — known widget operations</b>
+  <button data-preset="org">GetOrganization (FL1629)</button>
+  <button data-preset="search">SearchAnimal (cats)</button>
+  <button data-preset="attrs">AllAnimalAttributes (cat)</button>
+  <b>Presets — schema discovery (may be disabled in prod)</b>
+  <button data-preset="introspectRoot">Introspect: root query fields</button>
+  <button data-preset="introspectTypes">Introspect: list all types</button>
+  <button data-preset="introspectType">Introspect: one type's fields</button>
+  <b>Presets — field probes (work even if introspection is off)</b>
+  <button data-preset="probeAnimal">Probe extra animal fields (sex/description/photos…)</button>
+</div>
+
+<main>
+  <section class="pane">
+    <div class="bar">
+      <button class="run" id="run">▶ Run &nbsp;<span style="opacity:.7;font-weight:500">(⌘/Ctrl+Enter)</span></button>
+      <span class="status" id="status">Ready</span>
+    </div>
+    <h2>Query</h2>
+    <textarea id="query" spellcheck="false"></textarea>
+    <h2>Variables (JSON)</h2>
+    <textarea id="vars" spellcheck="false">{}</textarea>
+  </section>
+  <section class="pane">
+    <h2>Response</h2>
+    <pre class="out" id="out">Pick a preset above, or write a query, then Run.</pre>
+    <div class="hint">
+      <strong>Tips.</strong> If introspection is disabled, use the <em>field probe</em>: add candidate fields and read the
+      <code>errors</code> — a message like <code>Cannot query field "sex" on type "Animal"</code> means it does <em>not</em> exist;
+      no error means it does. To run <code>SearchAnimal</code> scoped to your shelter, first run <code>GetOrganization</code>,
+      copy the returned <code>organizationId</code> (a UUID) into the SearchAnimal variables under <code>filters.organization_id</code>.
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+
+  var PRESETS = {
+    org: {
+      query:
+        'query GetOrganization($organizationId: String!, $idType: String!) {\n' +
+        '  organization(id: $organizationId, idType: $idType) {\n' +
+        '    organizationName\n    displayId\n    organizationId\n  }\n}',
+      vars: { organizationId: "FL1629", idType: "display_id" }
+    },
+    search: {
+      query:
+        'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!) {\n' +
+        '  searchAnimal(pagination: $pagination, sort: { field: "animal_type", order: "desc" }, filters: $filters) {\n' +
+        '    totalCount\n' +
+        '    animals {\n' +
+        '      animalId\n      animalName\n      primaryPhotoId\n' +
+        '      physical { size { label } breed { primary mixed } age { label value } }\n' +
+        '      _contact { address { city state } }\n' +
+        '      publicUrl { url }\n' +
+        '    }\n' +
+        '  }\n}',
+      vars: {
+        pagination: { fromPage: 0, pageSize: 3 },
+        filters: { animal_type: ["cat"], adoption_status: "adoptable" /*, organization_id: ["<paste UUID from GetOrganization>"] */ }
+      }
+    },
+    attrs: {
+      query:
+        'query AllAnimalAttributes($animalType: String!) {\n' +
+        '  allAnimalAttributes(animalType: $animalType) {\n' +
+        '    ages { id alternateId name }\n' +
+        '    sexes { id alternateId name }\n' +
+        '    sizes { id alternateId name }\n' +
+        '    specialNeeds\n' +
+        '    houseTrainedList { id alternateId name }\n' +
+        '    interactions {\n' +
+        '      cats { id name }\n      dogs { id name }\n' +
+        '      children8AndUp { id name }\n      childrenUnder8 { id name }\n' +
+        '    }\n' +
+        '    speciesList { primaryBreeds { id name } secondaryBreeds { id name } }\n' +
+        '  }\n}',
+      vars: { animalType: "cat" }
+    },
+    introspectRoot: {
+      query:
+        'query Root {\n  __schema {\n    queryType {\n      fields {\n        name\n        description\n' +
+        '        args { name type { name kind ofType { name kind } } }\n' +
+        '        type { name kind ofType { name kind } }\n      }\n    }\n  }\n}',
+      vars: {}
+    },
+    introspectTypes: {
+      query: 'query Types {\n  __schema {\n    types { name kind }\n  }\n}',
+      vars: {}
+    },
+    introspectType: {
+      query:
+        'query TypeFields($name: String!) {\n  __type(name: $name) {\n    name\n    kind\n' +
+        '    fields {\n      name\n      description\n' +
+        '      type { name kind ofType { name kind ofType { name kind } } }\n    }\n  }\n}',
+      vars: { name: "Animal" }
+    },
+    probeAnimal: {
+      query:
+        '# Add/remove candidate fields, then read the "errors" array.\n' +
+        '# An error "Cannot query field X on type ..." => X does NOT exist.\n' +
+        '# No error for a field => it exists and is selectable.\n' +
+        'query ProbeAnimalFields($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!) {\n' +
+        '  searchAnimal(pagination: $pagination, filters: $filters) {\n' +
+        '    animals {\n' +
+        '      animalId\n      animalName\n' +
+        '      sex { label }\n' +
+        '      gender\n' +
+        '      description\n' +
+        '      status\n' +
+        '      photos { large medium small full }\n' +
+        '      primaryPhotoUrl\n' +
+        '      attributes { spayedNeutered houseTrained declawed specialNeeds }\n' +
+        '      physical { sex { label } gender coatLength { label } }\n' +
+        '    }\n' +
+        '  }\n}',
+      vars: {
+        pagination: { fromPage: 0, pageSize: 1 },
+        filters: { animal_type: ["cat"], adoption_status: "adoptable" }
+      }
+    }
+  };
+
+  function setPreset(key){
+    var p = PRESETS[key];
+    if(!p) return;
+    $('query').value = p.query;
+    $('vars').value = JSON.stringify(p.vars, null, 2);
+  }
+
+  function setStatus(text, cls){
+    var s = $('status');
+    s.textContent = text;
+    s.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  async function run(){
+    var endpoint = $('endpoint').value.trim();
+    var query = $('query').value;
+    var varsText = $('vars').value.trim() || '{}';
+    var variables;
+    try { variables = JSON.parse(varsText); }
+    catch(e){ setStatus('Variables are not valid JSON: ' + e.message, 'err'); return; }
+
+    setStatus('Running…');
+    var t0 = performance.now();
+    try {
+      var res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query, variables: variables })
+      });
+      var ms = Math.round(performance.now() - t0);
+      var text = await res.text();
+      var pretty;
+      try { pretty = JSON.stringify(JSON.parse(text), null, 2); }
+      catch(_) { pretty = text; }
+      $('out').textContent = pretty;
+      var hasErrors = /"errors"\s*:/.test(text);
+      if(!res.ok)      setStatus('HTTP ' + res.status + ' • ' + ms + ' ms', 'err');
+      else if(hasErrors) setStatus('200 with GraphQL errors • ' + ms + ' ms', 'err');
+      else             setStatus('OK • ' + ms + ' ms', 'ok');
+    } catch(err){
+      $('out').textContent = String(err) +
+        '\n\nIf this is a CORS or network error, try opening this file from a real http(s) origin,\n' +
+        'or paste the query into the DevTools console while on petfinder.com.';
+      setStatus('Request failed: ' + err.message, 'err');
+    }
+  }
+
+  document.querySelector('.presets').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-preset]');
+    if(b) setPreset(b.getAttribute('data-preset'));
+  });
+  $('run').addEventListener('click', run);
+  document.addEventListener('keydown', function(e){
+    if((e.metaKey || e.ctrlKey) && e.key === 'Enter') run();
+  });
+
+  setPreset('org');
+})();
+</script>
+</body>
+</html>
