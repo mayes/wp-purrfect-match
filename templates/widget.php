@@ -36,9 +36,13 @@ $pm_hide_breed  = ! empty( $atts['hide_breed'] );
 				<div class="pm-banner-intro">
 					<div class="pm-eyebrow">
 						<span aria-hidden="true">&#128150;</span>
-						<span><?php echo esc_html( $pm_org_name ); ?></span>
+						<?php if ( '' !== $pm_org_name ) : ?>
+							<span><?php echo esc_html( $pm_org_name ); ?></span>
+							<?php if ( ! empty( $atts['eyebrow'] ) ) : ?>
+								<span class="pm-eyebrow-dot" aria-hidden="true">&bull;</span>
+							<?php endif; ?>
+						<?php endif; ?>
 						<?php if ( ! empty( $atts['eyebrow'] ) ) : ?>
-							<span class="pm-eyebrow-dot" aria-hidden="true">&bull;</span>
 							<span class="pm-eyebrow-sub"><?php echo esc_html( $atts['eyebrow'] ); ?></span>
 						<?php endif; ?>
 					</div>
@@ -61,13 +65,15 @@ $pm_hide_breed  = ! empty( $atts['hide_breed'] );
 								?>
 							</a>
 						<?php endif; ?>
-						<span class="pm-powered">
-							<span aria-hidden="true">&#128062;</span>
-							<?php
-							/* translators: %s: organization name. */
-							echo esc_html( sprintf( __( 'Powered by %s', 'purrfect-match' ), $pm_org_name ) );
-							?>
-						</span>
+						<?php if ( '' !== $pm_org_name ) : ?>
+							<span class="pm-powered">
+								<span aria-hidden="true">&#128062;</span>
+								<?php
+								/* translators: %s: organization name. */
+								echo esc_html( sprintf( __( 'Powered by %s', 'purrfect-match' ), $pm_org_name ) );
+								?>
+							</span>
+						<?php endif; ?>
 					</div>
 				</div>
 
@@ -116,8 +122,12 @@ $pm_hide_breed  = ! empty( $atts['hide_breed'] );
 			<div class="pm-grid" data-pm-grid aria-busy="false" aria-live="polite"></div>
 			<div class="pm-footer">
 				<?php
-				/* translators: %s: organization name. */
-				echo esc_html( sprintf( __( 'Adoptable pets via Petfinder • %s', 'purrfect-match' ), $pm_org_name ) );
+				if ( '' !== $pm_org_name ) {
+					/* translators: %s: organization name. */
+					echo esc_html( sprintf( __( 'Adoptable pets via Petfinder • %s', 'purrfect-match' ), $pm_org_name ) );
+				} else {
+					esc_html_e( 'Adoptable pets via Petfinder', 'purrfect-match' );
+				}
 				?>
 			</div>
 		</div>

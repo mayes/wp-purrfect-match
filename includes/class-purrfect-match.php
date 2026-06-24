@@ -68,6 +68,38 @@ class Purrfect_Match {
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
 		add_shortcode( 'purrfect_match', array( $this, 'render_shortcode' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( PURRFECT_MATCH_FILE ), array( $this, 'action_links' ) );
+		add_action( 'admin_notices', array( $this, 'maybe_setup_notice' ) );
+	}
+
+	/**
+	 * Show a one-time setup nudge in wp-admin until an organization is set.
+	 *
+	 * @return void
+	 */
+	public function maybe_setup_notice() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// Don't nag on the plugin's own settings screen.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen && 'settings_page_' . Purrfect_Match_Settings::PAGE === $screen->id ) {
+			return;
+		}
+
+		$options = Purrfect_Match_Settings::get_options();
+		if ( '' !== trim( (string) $options['organization'] ) ) {
+			return;
+		}
+
+		$url = admin_url( 'options-general.php?page=' . Purrfect_Match_Settings::PAGE );
+		echo '<div class="notice notice-info is-dismissible"><p>';
+		printf(
+			/* translators: %s: settings page link. */
+			esc_html__( 'Purrfect Match is almost ready — add your Petfinder organization ID in %s to start showing adoptable pets.', 'purrfect-match' ),
+			'<a href="' . esc_url( $url ) . '">' . esc_html__( 'Settings → Purrfect Match', 'purrfect-match' ) . '</a>'
+		);
+		echo '</p></div>';
 	}
 
 	/**
@@ -185,6 +217,8 @@ class Purrfect_Match {
 			'hideBreed'    => (bool) $atts['hide_breed'],
 			'brand'        => $atts['brand'],
 			'orgName'      => sanitize_text_field( $atts['org_name'] ),
+			'canConfigure' => current_user_can( 'manage_options' ),
+			'settingsUrl'  => admin_url( 'options-general.php?page=' . Purrfect_Match_Settings::PAGE ),
 		);
 	}
 

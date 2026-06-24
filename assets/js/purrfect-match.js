@@ -51,6 +51,11 @@
 	var FILTER_ORDER = [ 'breed', 'size', 'age' ];
 	var FILTER_LABEL = { breed: 'Breed', size: 'Size', age: 'Age' };
 
+	// Short-lived localStorage cache: be a good citizen of the shared Petfinder
+	// endpoint by not re-fetching identical listings on every page view.
+	var CACHE_PREFIX = 'pmcache:v1:';
+	var CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes.
+
 	// Module-level cache so multiple widgets / repeat loads share org lookups.
 	var orgCache = {};
 
@@ -200,6 +205,38 @@
 			photo: a.primaryPhotoId ? ( cfg.s3Url + a.primaryPhotoId ) : '',
 			url: path ? ( base + path + '/details' ) : ( cfg.petfinderUrl || '#' )
 		};
+	}
+
+	function cacheKey( cfg ) {
+		var orgs = Array.isArray( cfg.organization ) ? cfg.organization.slice().sort().join( ',' ) : '';
+		return CACHE_PREFIX + [ cfg.apiBase, orgs, cfg.type, cfg.status, cfg.limit ].join( '|' );
+	}
+
+	function readCache( cfg ) {
+		try {
+			var raw = window.localStorage.getItem( cacheKey( cfg ) );
+			if ( ! raw ) {
+				return null;
+			}
+			var obj = JSON.parse( raw );
+			if ( ! obj || typeof obj.t !== 'number' || ! Array.isArray( obj.cats ) ) {
+				return null;
+			}
+			if ( ( Date.now() - obj.t ) > CACHE_TTL_MS ) {
+				return null;
+			}
+			return obj.cats;
+		} catch ( e ) {
+			return null;
+		}
+	}
+
+	function writeCache( cfg, cats ) {
+		try {
+			window.localStorage.setItem( cacheKey( cfg ), JSON.stringify( { t: Date.now(), cats: cats } ) );
+		} catch ( e ) {
+			/* storage unavailable / full / blocked — caching is best-effort. */
+		}
 	}
 
 	/* ----------------------------------------------------------------- */
@@ -476,6 +513,34 @@
 			setBusy( false );
 		}
 
+		// Shown when no organization has been configured yet. Admins get a
+		// setup nudge; visitors get a neutral message.
+		function showNotConfigured() {
+			if ( cfg.canConfigure ) {
+				grid.innerHTML =
+					'<div class="pm-empty">' +
+					'<div class="pm-empty-emoji">⚙️</div>' +
+					'<div class="pm-empty-title">Purrfect Match isn’t set up yet</div>' +
+					'<div class="pm-empty-text">Add your Petfinder organization ID to start showing adoptable pets.</div>' +
+					( cfg.settingsUrl ? '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( cfg.settingsUrl ) + '">Open settings</a>' : '' ) +
+					'</div>';
+			} else {
+				grid.innerHTML =
+					'<div class="pm-empty">' +
+					'<div class="pm-empty-emoji">🐾</div>' +
+					'<div class="pm-empty-title">No pets to show right now</div>' +
+					'<div class="pm-empty-text">Please check back soon!</div>' +
+					'</div>';
+			}
+			if ( countEl ) {
+				countEl.innerHTML = '';
+			}
+			if ( chipsEl ) {
+				chipsEl.innerHTML = '';
+			}
+			setBusy( false );
+		}
+
 		/* ---- behaviors ---- */
 
 		function shuffle() {
@@ -502,16 +567,35 @@
 		}
 
 		function load() {
+			var orgs = Array.isArray( cfg.organization ) ? cfg.organization : [];
+
+			// No organization configured: never fall through to querying every
+			// shelter. Show the setup / neutral state instead.
+			if ( ! orgs.length ) {
+				showNotConfigured();
+				return;
+			}
+
 			setBusy( true );
+
+			// Serve from the short-lived cache when fresh, to spare the endpoint.
+			var cached = readCache( cfg );
+			if ( cached ) {
+				cats = cached;
+				if ( ! cats.length ) {
+					showEmpty();
+					return;
+				}
+				hydrateFilterOptions();
+				render();
+				return;
+			}
+
 			showSkeletons();
 
-			var orgs = Array.isArray( cfg.organization ) ? cfg.organization : [];
-			var orgStep = orgs.length ? resolveOrgs( cfg.apiBase, orgs ) : Promise.resolve( [] );
-
-			orgStep.then( function ( uuids ) {
-				// Safety guard: if organizations were configured but none could be
-				// resolved, do NOT fall through to querying every shelter.
-				if ( orgs.length && uuids.length === 0 ) {
+			resolveOrgs( cfg.apiBase, orgs ).then( function ( uuids ) {
+				// Safety guard: organizations were configured but none resolved.
+				if ( uuids.length === 0 ) {
 					throw new Error( 'We couldn’t find this shelter on Petfinder.' );
 				}
 				return searchAnimals( cfg, uuids );
@@ -519,6 +603,7 @@
 				cats = animals.map( function ( a ) {
 					return normalize( a, cfg );
 				} );
+				writeCache( cfg, cats );
 				if ( ! cats.length ) {
 					showEmpty();
 					return;

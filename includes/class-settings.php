@@ -38,15 +38,17 @@ class Purrfect_Match_Settings {
 	/**
 	 * Default option values.
 	 *
-	 * These mirror the live CJ Paws pet-scroller embed:
-	 *   organization FL1629, type cat, status adoptable, limit 24, hideBreed true.
+	 * Defaults are intentionally generic so the plugin ships with no
+	 * organization preset — each site must enter its own Petfinder
+	 * organization ID before any listings appear. Endpoint defaults match
+	 * Petfinder's public Custom Pet List Widget (pet-scroller).
 	 *
 	 * @return array
 	 */
 	public static function defaults() {
 		return array(
 			// Listing source / query.
-			'organization'  => 'FL1629',
+			'organization'  => '',
 			'type'          => 'cat',
 			'status'        => 'adoptable',
 			'limit'         => 24,
@@ -55,11 +57,11 @@ class Purrfect_Match_Settings {
 
 			// Presentation / copy.
 			'title'         => 'Find your purr-fect match',
-			'eyebrow'       => 'Adoptable Cats',
+			'eyebrow'       => 'Adoptable Pets',
 			'subtitle'      => 'Filter by breed, size, and age.',
 			'brand'         => '#e93396',
-			'org_name'      => 'CJ Paws',
-			'org_website'   => 'https://cjpaws.org',
+			'org_name'      => '',
+			'org_website'   => '',
 
 			// Endpoints (advanced — rarely changed).
 			'api_base'      => 'https://psl.petfinder.com/graphql',
@@ -221,7 +223,8 @@ class Purrfect_Match_Settings {
 	 * @return void
 	 */
 	public function section_listing_intro() {
-		echo '<p>' . esc_html__( 'Choose which pets to show. Add the shortcode below to any page or post.', 'purrfect-match' ) . '</p>';
+		echo '<p>' . esc_html__( 'Enter your Petfinder organization ID, then add the shortcode below to any page or post.', 'purrfect-match' ) . '</p>';
+		echo '<p>' . esc_html__( 'Your organization ID is the short code in your Petfinder shelter URL — for example, the "FL1629" in petfinder.com/member/us/fl/.../FL1629. A UUID also works.', 'purrfect-match' ) . '</p>';
 		echo '<p><code>[purrfect_match]</code></p>';
 	}
 
