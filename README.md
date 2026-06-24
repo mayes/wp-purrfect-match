@@ -1,12 +1,13 @@
 # Purrfect Match
 
-A WordPress plugin that shows your shelter's **adoptable Petfinder pets** in a
-beautiful, filterable grid — *"Find your purr-fect match."* Built for
-[CJ Paws](https://cjpaws.org).
+A WordPress plugin that shows **any shelter's adoptable Petfinder pets** in a
+beautiful, filterable grid — *"Find your purr-fect match."* Originally built
+for [CJ Paws](https://cjpaws.org), it ships with generic defaults so any rescue
+can use it.
 
-It pairs a custom, brandable UI (from the CJ Paws mockup) with **real
-Petfinder data**, loaded **live in the visitor's browser** — so there's **no
-API key to request** and nothing to schedule or cache on your server.
+It pairs a custom, brandable UI with **real Petfinder data**, loaded **live in
+the visitor's browser** — so there's **no API key to request** and nothing to
+schedule or cache on your server.
 
 ## How it works
 
@@ -42,7 +43,7 @@ this runs client-side.
    via **Plugins → Add New → Upload**).
 2. Activate **Purrfect Match**.
 3. Open **Settings → Purrfect Match** and set your Petfinder organization ID
-   (and any branding/copy you like).
+   (**required** — e.g. `FL1629`), plus any branding/copy you like.
 4. Add `[purrfect_match]` to a page or post.
 
 ## Shortcode
@@ -61,21 +62,24 @@ With overrides:
 
 | Attribute      | Default                      | Description                                              |
 | -------------- | ---------------------------- | ------------------------------------------------------- |
-| `organization` | `FL1629`                     | Petfinder display ID(s) or UUID(s), comma-separated.    |
+| `organization` | *(none — required)*          | Petfinder display ID(s) or UUID(s), comma-separated.    |
 | `type`         | `cat`                        | `cat`, `dog`, `rabbit`, `small-furry`, `bird`, `horse`, `barnyard`, `scales-fins-other`. |
 | `status`       | `adoptable`                  | `adoptable`, `adopted`, `found`.                        |
 | `limit`        | `24`                         | Max pets to load (1–100).                               |
 | `columns`      | `3`                          | Desktop columns (2–4).                                  |
 | `hide_breed`   | `false`                      | Hide the breed name and the breed filter.              |
 | `title`        | `Find your purr-fect match`  | Main heading.                                           |
-| `eyebrow`      | `Adoptable Cats`             | Small label above the heading.                          |
+| `eyebrow`      | `Adoptable Pets`             | Small label above the heading.                          |
 | `subtitle`     | `Filter by breed, size, and age.` | Subheading.                                        |
 | `brand`        | `#e93396`                    | Accent color (hex).                                     |
-| `org_name`     | `CJ Paws`                    | Shown in the banner and as a location fallback.         |
-| `org_website`  | `https://cjpaws.org`         | "Visit" link in the banner.                             |
+| `org_name`     | *(empty)*                    | Shown in the banner and as a location fallback.         |
+| `org_website`  | *(empty)*                    | "Visit" link in the banner.                             |
 
 Advanced settings (`api_base`, `s3_url`, `petfinder_url`) match the public
 Petfinder widget and rarely need changing.
+
+> CJ Paws' exact configuration lives in [`examples/cjpaws.md`](examples/cjpaws.md)
+> — a ready-to-use settings table and shortcode.
 
 ## File structure
 
