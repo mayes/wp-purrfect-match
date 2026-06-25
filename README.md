@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.5.0-e93396" alt="Version 1.5.0">
+  <img src="https://img.shields.io/badge/version-1.6.0-e93396" alt="Version 1.6.0">
   <img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue" alt="License GPL-2.0-or-later">
   <img src="https://img.shields.io/badge/WordPress-5.6%2B-21759b" alt="WordPress 5.6+">
   <img src="https://img.shields.io/badge/PHP-7.0%2B-777bb4" alt="PHP 7.0+">
@@ -28,7 +28,8 @@
 | --- | --- |
 | 🐾 **Live Petfinder listings** | Real adoptable pets with photos, names, breed, size, age, and location. |
 | 🔎 **Instant filtering** | Filter by breed, size, and age in the browser, with removable chips. |
-| 📖 **Pet stories** | Optionally show each pet's description/bio, auto-detected and safe-fallback. |
+| 📖 **Pet stories (flip card)** | Flip a card to read the pet's description; auto-detected with safe fallback, text stays in the DOM for SEO. |
+| 🎚️ **Card display toggles** | Show/hide location, story, breed, and the age/size badge per site. |
 | 💌 **Apply to adopt** | Optional button linking each pet to your application form, prefilled with its name & ID. |
 | 🎨 **Fully brandable** | Your accent color, your copy, 2–4 column layouts. |
 | 📱 **Responsive** | Mobile-first grid that looks great from phone to desktop. |
@@ -75,10 +76,11 @@ With per-instance overrides:
 | `org_name`     | *(empty)*                    | Shown in the banner and as a location fallback.         |
 | `org_website`  | *(empty)*                    | "Visit" link in the banner.                             |
 
-Settings also include toggles for **Show pet stories**, **Show plugin credit**,
-**SEO structured data**, and an optional **Shared cache**. Advanced settings
-(`api_base`, `s3_url`, `petfinder_url`) match the public Petfinder widget and
-rarely need changing.
+Settings also include toggles for **Show pet stories** (flip to read), **Show
+location**, **Show age & size badge**, **Show plugin credit**, **SEO structured
+data**, and an optional **Shared cache**. Advanced settings (`api_base`,
+`s3_url`, `petfinder_url`) match the public Petfinder widget and rarely need
+changing.
 
 ## ⚙️ How it works
 

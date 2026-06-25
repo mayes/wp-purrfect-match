@@ -298,6 +298,8 @@ class Purrfect_Match {
 			'perPage'           => (int) $atts['per_page'],
 			'hideBreed'         => (bool) $atts['hide_breed'],
 			'showBios'          => ! empty( $options['show_bios'] ),
+			'showLocation'      => ! empty( $options['show_location'] ),
+			'showBadge'         => ! empty( $options['show_badge'] ),
 			'brand'             => $atts['brand'],
 			'orgName'           => sanitize_text_field( $atts['org_name'] ),
 			'adoptionFormUrl'   => esc_url_raw( $atts['adoption_form_url'] ),

@@ -534,15 +534,19 @@
 			var photo = escapeHtml( safeUrl( cat.photo ) );
 			var url = escapeHtml( safeUrl( cat.url ) );
 			var badge = escapeHtml( [ cat.age, cat.size ].filter( Boolean ).join( ' • ' ) );
+			var hasStory = !! ( cfg.showBios && cat.bio );
 
 			var media = photo
 				? '<img class="pm-card-img" src="' + photo + '" alt="' + name + '" loading="lazy" />'
 				: '<div class="pm-card-noimg" aria-hidden="true">🐾</div>';
 
-			var badgeHtml = badge ? '<div class="pm-badge">' + badge + '</div>' : '';
+			// Card-field toggles (default on when the flag is absent/undefined).
+			var badgeHtml = ( cfg.showBadge !== false && badge ) ? '<div class="pm-badge">' + badge + '</div>' : '';
 			var breedHtml = ( ! cfg.hideBreed && breed ) ? '<div class="pm-breed">' + breed + '</div>' : '';
-			var locHtml = '<div class="pm-loc">' + ( loc || escapeHtml( cfg.orgName || '' ) ) + '</div>';
-			var bioHtml = ( cfg.showBios && cat.bio ) ? '<p class="pm-bio">' + escapeHtml( cat.bio ) + '</p>' : '';
+			var locHtml = ( cfg.showLocation !== false ) ? '<div class="pm-loc">' + ( loc || escapeHtml( cfg.orgName || '' ) ) + '</div>' : '';
+			var storyBtn = hasStory
+				? '<button type="button" class="pm-flip-btn" data-pm-flip="open" aria-expanded="false"><span aria-hidden="true">📖</span> Read story</button>'
+				: '';
 
 			var ctas;
 			if ( cfg.adoptionFormUrl ) {
@@ -554,8 +558,8 @@
 					'<a class="pm-cta" href="' + url + '" target="_blank" rel="noopener noreferrer">Boop to view <span class="pm-cta-arrow" aria-hidden="true">→</span> <span aria-hidden="true">✨</span></a>';
 			}
 
-			return (
-				'<div class="pm-card">' +
+			var front =
+				'<div class="pm-card-front">' +
 				'<a class="pm-media-link" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="' + name + '">' +
 				'<div class="pm-card-media">' + media + badgeHtml + '</div>' +
 				'</a>' +
@@ -568,9 +572,29 @@
 				'</div>' +
 				'<div class="pm-paw" aria-hidden="true">🐾</div>' +
 				'</div>' +
-				bioHtml +
+				storyBtn +
 				'<div class="pm-cta-row">' + ctas + '</div>' +
 				'</div>' +
+				'</div>';
+
+			// The story lives on the back face. It stays in the DOM regardless of
+			// flip state, so screen readers and crawlers can always read it.
+			var back = '';
+			if ( hasStory ) {
+				back =
+					'<div class="pm-card-back">' +
+					'<div class="pm-back-head">' +
+					'<span class="pm-back-name">' + name + '</span>' +
+					'<button type="button" class="pm-flip-btn pm-flip-close" data-pm-flip="close" aria-label="Hide story">✕</button>' +
+					'</div>' +
+					'<div class="pm-back-story">' + escapeHtml( cat.bio ) + '</div>' +
+					'<button type="button" class="pm-flip-btn pm-flip-back" data-pm-flip="close"><span aria-hidden="true">←</span> Back</button>' +
+					'</div>';
+			}
+
+			return (
+				'<div class="pm-card' + ( hasStory ? ' pm-card--flip' : '' ) + '">' +
+				'<div class="pm-card-inner">' + front + back + '</div>' +
 				'</div>'
 			);
 		}
@@ -952,6 +976,24 @@
 			selects[ k ].addEventListener( 'change', resetAndPaint );
 		} );
 		wireActions();
+
+		// Flip cards to reveal/hide the pet story (delegated — cards are dynamic).
+		grid.addEventListener( 'click', function ( e ) {
+			var btn = e.target && e.target.closest ? e.target.closest( '[data-pm-flip]' ) : null;
+			if ( ! btn ) {
+				return;
+			}
+			e.preventDefault();
+			var cardEl = btn.closest( '.pm-card' );
+			if ( ! cardEl ) {
+				return;
+			}
+			var flipped = cardEl.classList.toggle( 'is-flipped' );
+			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
+			if ( opener ) {
+				opener.setAttribute( 'aria-expanded', flipped ? 'true' : 'false' );
+			}
+		} );
 
 		// Auto-load the next batch when the "Load more" button nears the viewport.
 		if ( moreEl && window.IntersectionObserver ) {

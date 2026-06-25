@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,6 +29,7 @@ organization ID and drop in the shortcode.
 * Accessible: labelled controls, `aria-live` updates, and reduced-motion support.
 * No API key, no cron, no stored pet data — listings are fetched on demand.
 * SEO-friendly: emits Schema.org structured data (AnimalShelter + a pet ItemList).
+* Card display toggles (location, story, breed, badge) and a flip-to-read pet story.
 
 == Installation ==
 
@@ -60,7 +61,7 @@ Override settings per shortcode:
 * `brand` — accent color as a hex value (e.g. `#e93396`).
 * `org_name`, `org_website` — shown in the banner.
 
-Settings also include toggles for **Show pet stories** and **Show plugin credit**.
+Settings also include toggles for **Show pet stories** (flip to read), **Show location**, **Show age & size badge**, and **Show plugin credit**.
 
 == Frequently Asked Questions ==
 
@@ -113,6 +114,10 @@ subject to Petfinder's terms and policies:
 
 == Changelog ==
 
+= 1.6.0 =
+* New: card display toggles — show or hide the location, pet story, breed, and the age • size badge.
+* New: pet stories now flip — a "Read story" button flips the card to reveal the description on the back (keyboard-accessible, respects reduced-motion; the text stays in the page for SEO and screen readers).
+
 = 1.5.0 =
 * New: SEO / structured data — outputs Schema.org JSON-LD (your shelter as an AnimalShelter, plus a pet ItemList) so search engines and AI assistants can understand your listings. Toggle in Settings.
 * New: Settings toggle to show or hide the "Plugin by …" credit in the widget footer.
@@ -146,6 +151,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.6.0 =
+Adds card display toggles (location, story, breed, badge) and a flip-to-read pet story.
 
 = 1.5.0 =
 Adds SEO structured data (Schema.org), a plugin-credit toggle, security hardening, a build script, and small-screen polish.
