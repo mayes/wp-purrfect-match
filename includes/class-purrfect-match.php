@@ -288,6 +288,7 @@ class Purrfect_Match {
 			'limit'             => (int) $atts['limit'],
 			'perPage'           => (int) $atts['per_page'],
 			'hideBreed'         => (bool) $atts['hide_breed'],
+			'showBios'          => ! empty( $options['show_bios'] ),
 			'brand'             => $atts['brand'],
 			'orgName'           => sanitize_text_field( $atts['org_name'] ),
 			'adoptionFormUrl'   => esc_url_raw( $atts['adoption_form_url'] ),

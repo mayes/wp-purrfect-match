@@ -169,6 +169,7 @@ class Purrfect_Match_REST {
 				'breed' => isset( $cat['breed'] ) ? sanitize_text_field( (string) $cat['breed'] ) : '',
 				'size'  => isset( $cat['size'] ) ? sanitize_text_field( (string) $cat['size'] ) : '',
 				'age'   => isset( $cat['age'] ) ? sanitize_text_field( (string) $cat['age'] ) : '',
+				'bio'   => isset( $cat['bio'] ) ? sanitize_text_field( (string) $cat['bio'] ) : '',
 				'city'  => isset( $cat['city'] ) ? sanitize_text_field( (string) $cat['city'] ) : '',
 				'state' => isset( $cat['state'] ) ? sanitize_text_field( (string) $cat['state'] ) : '',
 				'photo' => isset( $cat['photo'] ) ? esc_url_raw( (string) $cat['photo'] ) : '',

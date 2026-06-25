@@ -498,6 +498,19 @@
 	color: rgba(0, 0, 0, .45);
 }
 
+/* Pet bio / story (clamped to two lines) */
+.pm-bio {
+	margin: .6rem 0 0;
+	font-size: .8rem;
+	line-height: 1.45;
+	color: rgba(0, 0, 0, .6);
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
 .pm-paw {
 	font-size: 1.25rem;
 	opacity: .7;

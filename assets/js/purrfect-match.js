@@ -25,20 +25,25 @@
 		'  }' +
 		'}';
 
-	var SEARCH_QUERY =
-		'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!) {' +
-		'  searchAnimal(pagination: $pagination, sort: { field: "animal_type", order: "desc" }, filters: $filters) {' +
-		'    totalCount' +
-		'    animals {' +
-		'      animalId' +
-		'      animalName' +
-		'      primaryPhotoId' +
-		'      physical { size { label } breed { primary mixed } age { label value } }' +
-		'      _contact { address { city state } }' +
-		'      publicUrl { url }' +
-		'    }' +
-		'  }' +
-		'}';
+	// Build the search query. When rich is true, request the optional
+	// `description` field (the pet's "story"); if the endpoint doesn't support
+	// it the caller downgrades to the proven query, so this can't break.
+	function buildSearchQuery( rich ) {
+		return 'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!) {' +
+			'  searchAnimal(pagination: $pagination, sort: { field: "animal_type", order: "desc" }, filters: $filters) {' +
+			'    totalCount' +
+			'    animals {' +
+			'      animalId' +
+			'      animalName' +
+			'      primaryPhotoId' +
+			( rich ? '      description' : '' ) +
+			'      physical { size { label } breed { primary mixed } age { label value } }' +
+			'      _contact { address { city state } }' +
+			'      publicUrl { url }' +
+			'    }' +
+			'  }' +
+			'}';
+	}
 
 	var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -162,7 +167,27 @@
 
 	// Fetch one page. PAGE_SIZE is kept conservative (matches Petfinder's own
 	// widget) so the request is never rejected for an over-large page.
-	function searchPage( cfg, orgUuids, fromPage ) {
+	// Whether the endpoint supports the optional `description` field, cached per
+	// endpoint so the probe only happens once.
+	function richState( cfg ) {
+		try {
+			return window.localStorage.getItem( 'pmrich:v1:' + cfg.apiBase );
+		} catch ( e ) {
+			return null;
+		}
+	}
+
+	function setRichState( cfg, value ) {
+		try {
+			window.localStorage.setItem( 'pmrich:v1:' + cfg.apiBase, value );
+		} catch ( e ) {
+			/* best-effort */
+		}
+	}
+
+	// One page. Parses the body even on a 4xx so an "unknown field" validation
+	// error (which Apollo returns as HTTP 400) can be detected and downgraded.
+	function searchPage( cfg, orgUuids, fromPage, rich ) {
 		var filters = {
 			animal_type: [ cfg.type ],
 			adoption_status: cfg.status
@@ -175,19 +200,69 @@
 			filters: filters,
 			pagination: { fromPage: fromPage, pageSize: PAGE_SIZE }
 		};
-		return gql( cfg.apiBase, SEARCH_QUERY, variables ).then( function ( data ) {
-			var sa = ( data && data.searchAnimal ) || {};
-			return { totalCount: sa.totalCount || 0, animals: sa.animals || [] };
+		return fetch( cfg.apiBase, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify( { query: buildSearchQuery( rich ), variables: variables } )
+		} ).then( function ( res ) {
+			// Apollo returns the validation error body with HTTP 400, so parse
+			// the JSON regardless of status to detect an unsupported field.
+			return res.json().then(
+				function ( json ) {
+					if ( json && json.errors && json.errors.length ) {
+						var err = new Error( json.errors[ 0 ].message || 'GraphQL error' );
+						if ( /Cannot query field/i.test( JSON.stringify( json.errors ) ) ) {
+							err.unknownField = true;
+						}
+						throw err;
+					}
+					if ( ! res.ok ) {
+						throw new Error( 'HTTP error ' + res.status );
+					}
+					var sa = ( json && json.data && json.data.searchAnimal ) || {};
+					return { totalCount: sa.totalCount || 0, animals: sa.animals || [] };
+				},
+				function () {
+					throw new Error( 'HTTP error ' + res.status );
+				}
+			);
 		} );
 	}
 
 	// Fetch the full set for the org (up to cfg.limit). Page 0 first to learn
-	// totalCount, then the remaining pages in parallel — so filters and counts
-	// operate on every animal, not just the first page.
+	// totalCount (and whether `description` is supported), then the remaining
+	// pages in parallel — so filters and counts operate on every animal.
 	function fetchAllAnimals( cfg, orgUuids ) {
 		// limit 0 (or unset) = fetch all, bounded by a high safety ceiling.
 		var cap = cfg.limit > 0 ? cfg.limit : 1000;
-		return searchPage( cfg, orgUuids, 0 ).then( function ( first ) {
+		var wantRich = !! cfg.showBios && richState( cfg ) !== 'no';
+
+		function firstPage() {
+			if ( ! wantRich ) {
+				return searchPage( cfg, orgUuids, 0, false ).then( function ( r ) {
+					r._rich = false;
+					return r;
+				} );
+			}
+			return searchPage( cfg, orgUuids, 0, true ).then( function ( r ) {
+				setRichState( cfg, 'yes' );
+				r._rich = true;
+				return r;
+			} ).catch( function ( e ) {
+				// `description` not supported here: remember and use the proven query.
+				if ( e && e.unknownField ) {
+					setRichState( cfg, 'no' );
+					return searchPage( cfg, orgUuids, 0, false ).then( function ( r ) {
+						r._rich = false;
+						return r;
+					} );
+				}
+				throw e;
+			} );
+		}
+
+		return firstPage().then( function ( first ) {
+			var useRich = first._rich;
 			var animals = first.animals.slice();
 			var total = Math.min( first.totalCount || animals.length, cap );
 			if ( ! first.animals.length || animals.length >= total ) {
@@ -196,7 +271,7 @@
 			var pages = Math.ceil( total / PAGE_SIZE );
 			var rest = [];
 			for ( var p = 1; p < pages; p++ ) {
-				rest.push( searchPage( cfg, orgUuids, p ) );
+				rest.push( searchPage( cfg, orgUuids, p, useRich ) );
 			}
 			return Promise.all( rest ).then( function ( results ) {
 				results.forEach( function ( r ) {
@@ -234,6 +309,7 @@
 			age: ( phys.age && phys.age.label ) || '',
 			city: addr.city || '',
 			state: addr.state || '',
+			bio: a.description ? decodeEntities( String( a.description ) ).replace( /\s+/g, ' ' ).trim() : '',
 			photo: a.primaryPhotoId ? ( cfg.s3Url + a.primaryPhotoId ) : '',
 			url: path ? ( base + path + '/details' ) : ( cfg.petfinderUrl || '#' )
 		};
@@ -440,6 +516,7 @@
 			var badgeHtml = badge ? '<div class="pm-badge">' + badge + '</div>' : '';
 			var breedHtml = ( ! cfg.hideBreed && breed ) ? '<div class="pm-breed">' + breed + '</div>' : '';
 			var locHtml = '<div class="pm-loc">' + ( loc || escapeHtml( cfg.orgName || '' ) ) + '</div>';
+			var bioHtml = ( cfg.showBios && cat.bio ) ? '<p class="pm-bio">' + escapeHtml( cat.bio ) + '</p>' : '';
 
 			var ctas;
 			if ( cfg.adoptionFormUrl ) {
@@ -465,6 +542,7 @@
 				'</div>' +
 				'<div class="pm-paw" aria-hidden="true">🐾</div>' +
 				'</div>' +
+				bioHtml +
 				'<div class="pm-cta-row">' + ctas + '</div>' +
 				'</div>' +
 				'</div>'
