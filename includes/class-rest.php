@@ -6,9 +6,10 @@
  * the listings itself. Instead:
  *   - Visitors READ a cached copy from this site (one fast DB read, no call
  *     to Petfinder).
- *   - Only logged-in, capable users (edit_posts) WRITE/refresh the cache,
+ *   - Only logged-in editors/admins (edit_pages) WRITE/refresh the cache,
  *     populated by their own browser after a live fetch. This keeps the cache
- *     from being writable — and therefore poisonable — by the public.
+ *     from being writable — and therefore poisonable — by the public or by
+ *     lower-trust roles.
  *
  * The write endpoint relies on the REST cookie-auth nonce (X-WP-Nonce), so a
  * valid capability check requires a logged-in session; anonymous writes fail.
@@ -73,12 +74,16 @@ class Purrfect_Match_REST {
 	}
 
 	/**
-	 * Only logged-in users who can edit content may refresh the cache.
+	 * Only logged-in editors/admins may refresh the cache.
+	 *
+	 * Gated on `edit_pages` (Editors and Administrators) rather than
+	 * `edit_posts` so lower-trust roles (Contributors/Authors) cannot overwrite
+	 * the listings served to every visitor.
 	 *
 	 * @return bool
 	 */
 	public function can_write() {
-		return current_user_can( 'edit_posts' );
+		return current_user_can( 'edit_pages' );
 	}
 
 	/**
@@ -160,16 +165,19 @@ class Purrfect_Match_REST {
 			if ( ! is_array( $cat ) ) {
 				continue;
 			}
-			$str = static function ( $v ) {
-				return isset( $v ) ? sanitize_text_field( (string) $v ) : '';
-			};
+			// Bios are free text: keep line breaks but cap the length so a long
+			// description (x up to 1000 pets) can't bloat a single transient.
+			$bio = isset( $cat['bio'] ) ? sanitize_textarea_field( (string) $cat['bio'] ) : '';
+			if ( strlen( $bio ) > 600 ) {
+				$bio = function_exists( 'mb_substr' ) ? mb_substr( $bio, 0, 600 ) : substr( $bio, 0, 600 );
+			}
 			$out[] = array(
 				'id'    => isset( $cat['id'] ) ? sanitize_text_field( (string) $cat['id'] ) : '',
 				'name'  => isset( $cat['name'] ) ? sanitize_text_field( (string) $cat['name'] ) : '',
 				'breed' => isset( $cat['breed'] ) ? sanitize_text_field( (string) $cat['breed'] ) : '',
 				'size'  => isset( $cat['size'] ) ? sanitize_text_field( (string) $cat['size'] ) : '',
 				'age'   => isset( $cat['age'] ) ? sanitize_text_field( (string) $cat['age'] ) : '',
-				'bio'   => isset( $cat['bio'] ) ? sanitize_text_field( (string) $cat['bio'] ) : '',
+				'bio'   => $bio,
 				'city'  => isset( $cat['city'] ) ? sanitize_text_field( (string) $cat['city'] ) : '',
 				'state' => isset( $cat['state'] ) ? sanitize_text_field( (string) $cat['state'] ) : '',
 				'photo' => isset( $cat['photo'] ) ? esc_url_raw( (string) $cat['photo'] ) : '',

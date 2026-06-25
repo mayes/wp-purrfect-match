@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 280" width="1200" height="280" role="img" aria-label="Purrfect Match — Find your purr-fect match">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e93396"/>
+      <stop offset="1" stop-color="#ff8fc7"/>
+    </linearGradient>
+    <style>
+      text { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="280" rx="28" fill="url(#bg)"/>
+  <circle cx="1060" cy="40" r="150" fill="#ffffff" opacity="0.12"/>
+  <circle cx="150" cy="300" r="140" fill="#ffffff" opacity="0.10"/>
+
+  <!-- paw motif -->
+  <g fill="#ffffff" opacity="0.95" transform="translate(70,96)">
+    <ellipse cx="44" cy="66" rx="30" ry="23"/>
+    <circle cx="14" cy="30" r="11"/>
+    <circle cx="38" cy="18" r="11"/>
+    <circle cx="64" cy="20" r="11"/>
+    <circle cx="86" cy="36" r="11"/>
+  </g>
+
+  <text x="192" y="118" font-size="66" font-weight="800" fill="#ffffff">Purrfect Match</text>
+  <text x="194" y="166" font-size="27" fill="#ffffff" opacity="0.95">Find your purr-fect match — adoptable pets, beautifully displayed.</text>
+
+  <g transform="translate(194,196)">
+    <rect width="232" height="36" rx="18" fill="#ffffff" opacity="0.20"/>
+    <text x="22" y="24" font-size="15" font-weight="700" fill="#ffffff">No API key required</text>
+    <rect x="248" width="178" height="36" rx="18" fill="#ffffff" opacity="0.20"/>
+    <text x="270" y="24" font-size="15" font-weight="700" fill="#ffffff">Works with Petfinder</text>
+    <rect x="444" width="150" height="36" rx="18" fill="#ffffff" opacity="0.20"/>
+    <text x="466" y="24" font-size="15" font-weight="700" fill="#ffffff">100% client-side</text>
+  </g>
+</svg>

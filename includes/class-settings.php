@@ -62,6 +62,7 @@ class Purrfect_Match_Settings {
 			'eyebrow'             => 'Adoptable Pets',
 			'subtitle'            => 'Filter by breed, size, and age.',
 			'show_bios'           => 1,
+			'show_credit'         => 1,
 			'brand'               => '#e93396',
 			'org_name'            => '',
 			'org_website'         => '',
@@ -243,6 +244,7 @@ class Purrfect_Match_Settings {
 			'eyebrow'     => array( __( 'Eyebrow label', 'purrfect-match' ), 'text', __( 'Small label above the heading.', 'purrfect-match' ) ),
 			'subtitle'    => array( __( 'Subheading', 'purrfect-match' ), 'text', '' ),
 			'show_bios'   => array( __( 'Show pet stories', 'purrfect-match' ), 'checkbox', __( 'Show each pet’s description/bio on its card, when Petfinder provides one.', 'purrfect-match' ) ),
+			'show_credit' => array( __( 'Show plugin credit', 'purrfect-match' ), 'checkbox', __( 'Show a small “Plugin by Andrew Mayes” credit in the widget footer.', 'purrfect-match' ) ),
 			'brand'       => array( __( 'Brand color', 'purrfect-match' ), 'color', __( 'Accent color for buttons, chips, and cards.', 'purrfect-match' ) ),
 			'org_name'    => array( __( 'Organization name', 'purrfect-match' ), 'text', '' ),
 			'org_website' => array( __( 'Organization website', 'purrfect-match' ), 'url', '' ),
@@ -550,6 +552,7 @@ class Purrfect_Match_Settings {
 		// Checkboxes.
 		$out['hide_breed']   = empty( $input['hide_breed'] ) ? 0 : 1;
 		$out['show_bios']    = empty( $input['show_bios'] ) ? 0 : 1;
+		$out['show_credit']  = empty( $input['show_credit'] ) ? 0 : 1;
 		$out['server_cache'] = empty( $input['server_cache'] ) ? 0 : 1;
 
 		// Cache lifetime (minutes).

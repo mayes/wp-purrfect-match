@@ -236,6 +236,7 @@ class Purrfect_Match {
 				'per_page'             => $options['per_page'],
 				'columns'              => $options['columns'],
 				'hide_breed'           => $options['hide_breed'],
+				'show_credit'          => $options['show_credit'],
 				'title'                => $options['title'],
 				'eyebrow'              => $options['eyebrow'],
 				'subtitle'             => $options['subtitle'],
@@ -257,7 +258,8 @@ class Purrfect_Match {
 		$atts['limit']      = min( 1000, absint( $atts['limit'] ) );
 		$atts['per_page']   = min( 100, absint( $atts['per_page'] ) );
 		$atts['columns']    = max( 2, min( 4, absint( $atts['columns'] ) ) );
-		$atts['hide_breed'] = $this->truthy( $atts['hide_breed'] );
+		$atts['hide_breed']  = $this->truthy( $atts['hide_breed'] );
+		$atts['show_credit'] = $this->truthy( $atts['show_credit'] );
 
 		if ( ! preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $atts['brand'] ) ) {
 			$atts['brand'] = '#e93396';
@@ -298,8 +300,10 @@ class Purrfect_Match {
 			'settingsUrl'       => admin_url( 'options-general.php?page=' . Purrfect_Match_Settings::PAGE ),
 			'serverCache'       => ! empty( $options['server_cache'] ),
 			'restUrl'           => esc_url_raw( rest_url( Purrfect_Match_REST::NS . '/pets' ) ),
-			'restNonce'         => wp_create_nonce( 'wp_rest' ),
-			'canWrite'          => current_user_can( 'edit_posts' ),
+			// Only emit a write nonce for users who can actually write, so a
+			// cached/anonymous page never carries a usable REST nonce.
+			'restNonce'         => current_user_can( 'edit_pages' ) ? wp_create_nonce( 'wp_rest' ) : '',
+			'canWrite'          => current_user_can( 'edit_pages' ),
 		);
 	}
 

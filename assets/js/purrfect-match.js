@@ -88,7 +88,26 @@
 			.replace( /&/g, '&amp;' )
 			.replace( /</g, '&lt;' )
 			.replace( />/g, '&gt;' )
-			.replace( /"/g, '&quot;' );
+			.replace( /"/g, '&quot;' )
+			.replace( /'/g, '&#39;' );
+	}
+
+	// Defense-in-depth for URL sinks: allow only http(s) / relative / anchor
+	// URLs, so a hostile scheme (javascript:, data:, vbscript:, …) can never
+	// reach an href/src even if some future change feeds it an unvalidated URL.
+	function safeUrl( u ) {
+		var s = String( u == null ? '' : u ).trim();
+		if ( ! s ) {
+			return '';
+		}
+		if ( /^https?:\/\//i.test( s ) || /^[/#?]/.test( s ) || /^\.\.?\//.test( s ) ) {
+			return s;
+		}
+		// Anything else declaring a scheme is rejected.
+		if ( /^[a-z][a-z0-9+.-]*:/i.test( s ) ) {
+			return '';
+		}
+		return s;
 	}
 
 	// Petfinder may return names containing HTML entities; decode for display.
@@ -339,15 +358,19 @@
 		}
 	}
 
-	function writeCache( cfg, cats ) {
+	// Optional `stamp` lets a caller preserve an upstream age (e.g. the shared
+	// cache's write time) instead of re-stamping the copy as brand new.
+	function writeCache( cfg, cats, stamp ) {
 		try {
-			window.localStorage.setItem( cacheKey( cfg ), JSON.stringify( { t: Date.now(), cats: cats } ) );
+			var t = typeof stamp === 'number' && stamp > 0 ? stamp : Date.now();
+			window.localStorage.setItem( cacheKey( cfg ), JSON.stringify( { t: t, cats: cats } ) );
 		} catch ( e ) {
 			/* storage unavailable / full / blocked — caching is best-effort. */
 		}
 	}
 
 	// Shared (server) cache: visitors read; only capable, logged-in users write.
+	// Returns { t, cats } so the caller can honor the server-side write time.
 	function serverGet( cfg ) {
 		var url = cfg.restUrl + ( cfg.restUrl.indexOf( '?' ) === -1 ? '?' : '&' ) + 'key=' + encodeURIComponent( cacheKey( cfg ) );
 		return fetch( url, { headers: { Accept: 'application/json' } } )
@@ -355,7 +378,10 @@
 				return r.ok ? r.json() : null;
 			} )
 			.then( function ( j ) {
-				return ( j && Array.isArray( j.cats ) ) ? j.cats : null;
+				if ( ! j || ! Array.isArray( j.cats ) ) {
+					return null;
+				}
+				return { t: typeof j.t === 'number' ? j.t : 0, cats: j.cats };
 			} )
 			.catch( function () {
 				return null;
@@ -505,8 +531,8 @@
 			var name = escapeHtml( cat.name );
 			var breed = escapeHtml( cat.breed );
 			var loc = escapeHtml( [ cat.city, cat.state ].filter( Boolean ).join( ', ' ) );
-			var photo = escapeHtml( cat.photo );
-			var url = escapeHtml( cat.url );
+			var photo = escapeHtml( safeUrl( cat.photo ) );
+			var url = escapeHtml( safeUrl( cat.url ) );
 			var badge = escapeHtml( [ cat.age, cat.size ].filter( Boolean ).join( ' • ' ) );
 
 			var media = photo
@@ -521,7 +547,7 @@
 			var ctas;
 			if ( cfg.adoptionFormUrl ) {
 				ctas =
-					'<a class="pm-cta pm-cta-adopt" href="' + escapeHtml( adoptionLink( cat ) ) + '" target="_blank" rel="noopener noreferrer">💌 Apply to adopt</a>' +
+					'<a class="pm-cta pm-cta-adopt" href="' + escapeHtml( safeUrl( adoptionLink( cat ) ) ) + '" target="_blank" rel="noopener noreferrer">💌 Apply to adopt</a>' +
 					'<a class="pm-cta-view" href="' + url + '" target="_blank" rel="noopener noreferrer">View details</a>';
 			} else {
 				ctas =
@@ -696,10 +722,10 @@
 			// other adoption pages (configured) instead of a dead end.
 			var links = '';
 			if ( cfg.adoptapetUrl ) {
-				links += '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( cfg.adoptapetUrl ) + '" target="_blank" rel="noopener noreferrer">🐾 View on Adopt-a-Pet</a>';
+				links += '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( safeUrl( cfg.adoptapetUrl ) ) + '" target="_blank" rel="noopener noreferrer">🐾 View on Adopt-a-Pet</a>';
 			}
 			if ( cfg.petfinderMemberUrl ) {
-				links += '<a class="pm-btn" href="' + escapeHtml( cfg.petfinderMemberUrl ) + '" target="_blank" rel="noopener noreferrer">🔎 View on Petfinder</a>';
+				links += '<a class="pm-btn" href="' + escapeHtml( safeUrl( cfg.petfinderMemberUrl ) ) + '" target="_blank" rel="noopener noreferrer">🔎 View on Petfinder</a>';
 			}
 
 			if ( links ) {
@@ -756,7 +782,7 @@
 					'<div class="pm-empty-emoji">⚙️</div>' +
 					'<div class="pm-empty-title">Purrfect Match isn’t set up yet</div>' +
 					'<div class="pm-empty-text">Add your Petfinder organization ID to start showing adoptable pets.</div>' +
-					( cfg.settingsUrl ? '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( cfg.settingsUrl ) + '">Open settings</a>' : '' ) +
+					( cfg.settingsUrl ? '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( safeUrl( cfg.settingsUrl ) ) + '">Open settings</a>' : '' ) +
 					'</div>';
 			} else {
 				grid.innerHTML =
@@ -857,10 +883,10 @@
 			// 2. Shared server cache (one fast read, no Petfinder call).
 			if ( cfg.serverCache && cfg.restUrl ) {
 				showSkeletons();
-				serverGet( cfg ).then( function ( serverCats ) {
-					if ( serverCats ) {
-						writeCache( cfg, serverCats );
-						useCats( serverCats );
+				serverGet( cfg ).then( function ( server ) {
+					if ( server && server.cats && server.cats.length ) {
+						writeCache( cfg, server.cats, server.t );
+						useCats( server.cats );
 					} else {
 						liveFetch();
 					}

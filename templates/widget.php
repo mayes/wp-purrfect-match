@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $pm_org_name    = $atts['org_name'];
 $pm_org_website = $atts['org_website'];
 $pm_hide_breed  = ! empty( $atts['hide_breed'] );
+$pm_show_credit = ! empty( $atts['show_credit'] );
 ?>
 <div
 	class="pm-wrap"
@@ -136,15 +137,17 @@ $pm_hide_breed  = ! empty( $atts['hide_breed'] );
 					esc_html_e( 'Adoptable pets via Petfinder', 'purrfect-match' );
 				}
 				?>
-				<span class="pm-credit">
-					<?php
-					printf(
-						/* translators: %s: author link. */
-						esc_html__( 'Plugin by %s', 'purrfect-match' ),
-						'<a href="https://www.andrewmayes.com/" target="_blank" rel="noopener noreferrer">Andrew Mayes</a>'
-					);
-					?>
-				</span>
+				<?php if ( $pm_show_credit ) : ?>
+					<span class="pm-credit">
+						<?php
+						printf(
+							/* translators: %s: author link. */
+							esc_html__( 'Plugin by %s', 'purrfect-match' ),
+							'<a href="https://www.andrewmayes.com/" target="_blank" rel="noopener noreferrer">Andrew Mayes</a>'
+						);
+						?>
+					</span>
+				<?php endif; ?>
 			</div>
 		</div>
 

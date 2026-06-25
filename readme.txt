@@ -2,9 +2,9 @@
 Contributors: andrewmayes
 Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
-Tested up to: 6.5
+Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,12 +51,15 @@ Override settings per shortcode:
 * `organization` — Petfinder display ID(s) or UUID(s), comma-separated.
 * `type` — cat, dog, rabbit, small-furry, bird, horse, barnyard, scales-fins-other.
 * `status` — adoptable, adopted, found.
-* `limit` — maximum pets to load (1–100).
+* `limit` — maximum pets to load (`0` = all; up to 1000).
 * `columns` — desktop columns (2–4).
 * `hide_breed` — true/false; hides the breed name and the breed filter.
+* `adoption_form_url` — link each pet to your application form (adds an "Apply to adopt" button, prefilled with the pet's name and ID).
 * `title`, `eyebrow`, `subtitle` — heading copy.
 * `brand` — accent color as a hex value (e.g. `#e93396`).
 * `org_name`, `org_website` — shown in the banner.
+
+Settings also include toggles for **Show pet stories** and **Show plugin credit**.
 
 == Frequently Asked Questions ==
 
@@ -86,7 +89,33 @@ visitors. Pet listings are requested directly by the visitor's browser from
 Petfinder; their browser therefore contacts Petfinder's domain to load pet
 data and photos.
 
+== External services ==
+
+To show your adoptable pets, this plugin loads listing data and photos **in the
+visitor's browser** from Petfinder's public widget data source:
+
+* Petfinder GraphQL endpoint — `psl.petfinder.com/graphql` — queried with your
+  organization ID and the chosen filters (animal type, status). No personal data
+  about your visitors is sent or collected.
+* Petfinder photo CDN — pet images load directly from Petfinder's image host.
+
+With the optional **Shared cache** setting enabled, a logged-in editor/admin's
+browser refreshes a copy stored on your own site, which visitors then read
+instead of each calling Petfinder.
+
+This plugin is **not affiliated with, endorsed by, or sponsored by Petfinder**.
+"Petfinder" is a trademark of its respective owner. Your use of Petfinder data is
+subject to Petfinder's terms and policies:
+
+* Terms of Service — https://www.petfinder.com/terms-of-service/
+* Privacy Policy — https://www.petfinder.com/privacy-policy/
+
 == Changelog ==
+
+= 1.4.1 =
+* New: Settings toggle to show or hide the "Plugin by …" credit in the widget footer.
+* Security: the shared cache can now only be refreshed by editors/admins (not lower-trust roles); pet bios are length-capped; URL outputs pass a scheme allow-list.
+* Maintenance: added a release build script and dev-file export rules, cache data is now removed on uninstall, small-screen (phone) layout polish, and an External services disclosure.
 
 = 1.4.0 =
 * New: pet stories — each card can show the pet's description/bio from Petfinder (toggle in Settings, on by default). The widget auto-detects whether the field is available and safely falls back if not.
@@ -115,6 +144,9 @@ data and photos.
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.4.1 =
+Security hardening (editor/admin-only cache refresh), a release build script, and small-screen polish.
 
 = 1.4.0 =
 Pet cards can now show each pet's story/description (auto-detected; toggle in Settings).
