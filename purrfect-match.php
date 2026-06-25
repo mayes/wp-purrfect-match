@@ -3,7 +3,7 @@
  * Plugin Name:       Purrfect Match
  * Plugin URI:        https://cjpaws.org/
  * Description:       Display adoptable pets from Petfinder in a beautiful, filterable grid. Built for CJ Paws (cjpaws.org) — "Find your purr-fect match." Data is loaded live in the visitor's browser, so no API key is required.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 5.6
  * Requires PHP:      7.0
  * Author:            CJ Paws
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PURRFECT_MATCH_VERSION', '1.0.0' );
+define( 'PURRFECT_MATCH_VERSION', '1.0.1' );
 define( 'PURRFECT_MATCH_FILE', __FILE__ );
 define( 'PURRFECT_MATCH_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PURRFECT_MATCH_URL', plugin_dir_url( __FILE__ ) );

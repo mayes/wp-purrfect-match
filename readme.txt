@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.5
 Requires PHP: 7.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,10 +88,16 @@ data and photos.
 
 == Changelog ==
 
+= 1.0.1 =
+* Fix: pet card images now stay cropped to a fixed frame so themes that force `img { height: auto }` can no longer make photos overflow and cover the card body. Cards are equal height and content is always visible.
+
 = 1.0.0 =
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+Layout fix for themes that override image sizing; cards now render consistently.
 
 = 1.0.0 =
 Initial release.

@@ -359,7 +359,8 @@
 /* ---------- Pet card ---------- */
 
 .pm-card {
-	display: block;
+	display: flex;
+	flex-direction: column;
 	overflow: hidden;
 	border-radius: 1rem;
 	background: #fff;
@@ -381,27 +382,44 @@
 	box-shadow: 0 0 0 2px color-mix(in srgb, var(--pm-brand) 45%, transparent);
 }
 
-.pm-card-media {
+/*
+ * The media box is a fixed-height, hard-clipped frame. The image is
+ * absolutely positioned to fill it, with !important on the sizing so a
+ * theme's `img { height: auto }` / `.entry-content img { max-width: 100% }`
+ * can't make photos overflow and cover the card body.
+ */
+.pm-wrap .pm-card-media {
 	position: relative;
-	height: 11rem;
+	height: 12rem;
+	flex: 0 0 auto;
+	overflow: hidden;
 	background: rgba(0, 0, 0, .05);
 }
 
-.pm-card-img {
-	height: 100%;
-	width: 100%;
-	object-fit: cover;
-	display: block;
+.pm-wrap .pm-card-media .pm-card-img {
+	position: absolute;
+	inset: 0;
+	height: 100% !important;
+	width: 100% !important;
+	max-width: none !important;
+	min-height: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	object-fit: cover !important;
+	display: block !important;
 	transition: transform .3s ease;
 }
 
 .pm-card:hover .pm-card-img { transform: scale(1.03); }
 
 .pm-card-noimg {
+	position: absolute;
+	inset: 0;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	height: 100%;
 	font-size: 2.5rem;
 	opacity: .5;
 }
@@ -410,6 +428,7 @@
 	position: absolute;
 	left: .75rem;
 	top: .75rem;
+	z-index: 2;
 	border-radius: 9999px;
 	background: rgba(255, 255, 255, .95);
 	padding: .25rem .75rem;
@@ -419,7 +438,10 @@
 	box-shadow: inset 0 0 0 1px var(--pm-ring), 0 1px 2px rgba(0, 0, 0, .1);
 }
 
-.pm-card-body { padding: 1rem; }
+.pm-card-body {
+	flex: 1 1 auto;
+	padding: 1rem;
+}
 
 .pm-card-head {
 	display: flex;
