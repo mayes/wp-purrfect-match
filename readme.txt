@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,9 @@ subject to Petfinder's terms and policies:
 
 == Changelog ==
 
+= 1.6.1 =
+* New: built-in Help & Documentation in the admin — a collapsible guide on the Settings screen plus native WordPress Help tabs (quick start, shortcode & attributes, settings reference, Petfinder Explorer, troubleshooting).
+
 = 1.6.0 =
 * New: card display toggles — show or hide the location, pet story, breed, and the age • size badge.
 * New: pet stories now flip — a "Read story" button flips the card to reveal the description on the back (keyboard-accessible, respects reduced-motion; the text stays in the page for SEO and screen readers).
@@ -151,6 +154,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.6.1 =
+Adds built-in Help & Documentation (Settings panel + WordPress Help tabs).
 
 = 1.6.0 =
 Adds card display toggles (location, story, breed, badge) and a flip-to-read pet story.

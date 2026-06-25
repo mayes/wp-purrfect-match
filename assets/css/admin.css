@@ -259,3 +259,82 @@
 }
 
 .pm-admin-credit a { color: var(--pm-admin-brand); font-weight: 700; }
+
+/* ---------- Help & Documentation ---------- */
+.pm-admin-help {
+	margin-top: 1.5rem;
+	background: #fff;
+	border: 1px solid #e6e7eb;
+	border-radius: 14px;
+	padding: 1.25rem 1.5rem;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+}
+
+.pm-admin-help-title {
+	margin: 0 0 .75rem;
+	font-size: 1.05rem;
+}
+
+.pm-help-item {
+	border-top: 1px solid #eef0f3;
+}
+
+.pm-help-item:first-of-type {
+	border-top: 0;
+}
+
+.pm-help-item > summary {
+	cursor: pointer;
+	list-style: none;
+	display: flex;
+	align-items: center;
+	gap: .5rem;
+	padding: .6rem .25rem;
+	font-weight: 700;
+	color: #1d2327;
+}
+
+.pm-help-item > summary::-webkit-details-marker {
+	display: none;
+}
+
+.pm-help-item > summary::before {
+	content: "\25B8";
+	color: var(--pm-admin-brand, #e93396);
+	transition: transform .15s ease;
+}
+
+.pm-help-item[open] > summary::before {
+	transform: rotate(90deg);
+}
+
+.pm-help-body {
+	padding: .1rem .5rem 1rem 1.6rem;
+	color: #3c434a;
+	font-size: .92rem;
+	line-height: 1.6;
+}
+
+.pm-help-body p {
+	margin: .4rem 0;
+}
+
+.pm-help-body ul {
+	list-style: disc;
+	margin: .2rem 0 .2rem 1.2rem;
+}
+
+.pm-help-body ol {
+	margin: .2rem 0 .2rem 1.2rem;
+}
+
+.pm-help-body li {
+	margin: .25rem 0;
+}
+
+.pm-help-body code {
+	background: #f0f0f1;
+	padding: .1em .4em;
+	border-radius: 4px;
+	font-size: .9em;
+}

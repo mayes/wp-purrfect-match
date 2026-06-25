@@ -116,13 +116,17 @@ class Purrfect_Match_Settings {
 	 * @return void
 	 */
 	public function add_settings_page() {
-		add_options_page(
+		$hook = add_options_page(
 			__( 'Purrfect Match', 'purrfect-match' ),
 			__( 'Purrfect Match', 'purrfect-match' ),
 			'manage_options',
 			self::PAGE,
 			array( $this, 'render_settings_page' )
 		);
+
+		if ( $hook ) {
+			add_action( 'load-' . $hook, array( $this, 'add_help_tabs' ) );
+		}
 
 		add_management_page(
 			__( 'Petfinder Explorer', 'purrfect-match' ),
@@ -131,6 +135,131 @@ class Purrfect_Match_Settings {
 			self::PAGE . '-explorer',
 			array( $this, 'render_explorer_page' )
 		);
+	}
+
+	/**
+	 * Documentation topics shared by the inline Help panel and the native
+	 * contextual Help tabs. Each entry is array( id, title, content-HTML ).
+	 *
+	 * @return array
+	 */
+	public function help_topics() {
+		$code = static function ( $s ) {
+			return '<code>' . esc_html( $s ) . '</code>';
+		};
+
+		$quick = '<ol>'
+			. '<li>' . esc_html__( 'Enter your Petfinder organization ID (for example, FL1629) below and save.', 'purrfect-match' ) . '</li>'
+			/* translators: %s: the [purrfect_match] shortcode. */
+			. '<li>' . sprintf( esc_html__( 'Add the %s shortcode to any page or post.', 'purrfect-match' ), $code( '[purrfect_match]' ) ) . '</li>'
+			. '<li>' . esc_html__( 'Adjust the look, filters, and card options to taste.', 'purrfect-match' ) . '</li>'
+			. '</ol>';
+
+		$shortcode = '<p>' . esc_html__( 'Basic usage:', 'purrfect-match' ) . '</p>'
+			. '<p>' . $code( '[purrfect_match]' ) . '</p>'
+			. '<p>' . esc_html__( 'With per-instance overrides:', 'purrfect-match' ) . '</p>'
+			. '<p>' . $code( '[purrfect_match type="dog" columns="4" limit="0"]' ) . '</p>'
+			. '<ul>'
+			. '<li>' . $code( 'organization' ) . ' — ' . esc_html__( 'display ID(s) or UUID(s), comma-separated.', 'purrfect-match' ) . '</li>'
+			. '<li>' . $code( 'type' ) . ' — ' . esc_html__( 'cat, dog, rabbit, small-furry, bird, horse, barnyard, scales-fins-other.', 'purrfect-match' ) . '</li>'
+			. '<li>' . $code( 'status' ) . ' — ' . esc_html__( 'adoptable, adopted, found.', 'purrfect-match' ) . '</li>'
+			. '<li>' . $code( 'limit' ) . ' — ' . esc_html__( 'maximum pets to load (0 = all).', 'purrfect-match' ) . '</li>'
+			. '<li>' . $code( 'columns' ) . ' — ' . esc_html__( 'desktop columns (2–4).', 'purrfect-match' ) . '</li>'
+			. '<li>' . $code( 'hide_breed' ) . ', ' . $code( 'adoption_form_url' ) . ', ' . $code( 'title' ) . ', ' . $code( 'brand' ) . ', ' . $code( 'org_name' ) . ', ' . $code( 'org_website' ) . ' — ' . esc_html__( 'per-instance overrides of the matching settings.', 'purrfect-match' ) . '</li>'
+			. '</ul>';
+
+		$settings = '<ul>'
+			. '<li>' . esc_html__( 'Organization, Animal type & Status — which pets to show.', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'Appearance — heading copy, brand color, columns, and card toggles (pet stories, location, age & size badge, plugin credit).', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'Performance — the optional shared cache (and its lifetime) and SEO structured data.', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'Fallback links — Adopt-a-Pet / Petfinder URLs shown if the live listings can’t load.', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'Advanced — endpoint and photo-CDN URLs; these rarely need changing.', 'purrfect-match' ) . '</li>'
+			. '</ul>';
+
+		/* translators: %s: the "Tools → Petfinder Explorer" menu path. */
+		$explorer = '<p>' . sprintf( esc_html__( 'Use %s to run live queries against Petfinder from your site and discover the extra fields the API exposes — handy for checking what data is available.', 'purrfect-match' ), '<strong>' . esc_html__( 'Tools → Petfinder Explorer', 'purrfect-match' ) . '</strong>' ) . '</p>';
+
+		$trouble = '<ul>'
+			. '<li>' . esc_html__( 'No pets showing? Confirm your organization ID is correct and that the organization has adoptable pets.', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'Seeing the “taking a cat nap” message? The live listings could not load — set Fallback links so visitors can still reach your pets.', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'No stories on the cards? Your Petfinder data may not include descriptions; the widget falls back gracefully.', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'Changes not appearing? Give the shared cache time to refresh (or lower its lifetime) and clear your browser cache.', 'purrfect-match' ) . '</li>'
+			. '</ul>';
+
+		return array(
+			array(
+				'id'      => 'pm-quick-start',
+				'title'   => __( 'Quick start', 'purrfect-match' ),
+				'content' => $quick,
+			),
+			array(
+				'id'      => 'pm-shortcode',
+				'title'   => __( 'Shortcode & attributes', 'purrfect-match' ),
+				'content' => $shortcode,
+			),
+			array(
+				'id'      => 'pm-settings',
+				'title'   => __( 'Settings reference', 'purrfect-match' ),
+				'content' => $settings,
+			),
+			array(
+				'id'      => 'pm-explorer',
+				'title'   => __( 'Petfinder Explorer', 'purrfect-match' ),
+				'content' => $explorer,
+			),
+			array(
+				'id'      => 'pm-troubleshooting',
+				'title'   => __( 'Troubleshooting', 'purrfect-match' ),
+				'content' => $trouble,
+			),
+		);
+	}
+
+	/**
+	 * Register native WordPress contextual Help tabs on the settings screen.
+	 *
+	 * @return void
+	 */
+	public function add_help_tabs() {
+		$screen = get_current_screen();
+		if ( ! $screen ) {
+			return;
+		}
+
+		foreach ( $this->help_topics() as $topic ) {
+			$screen->add_help_tab(
+				array(
+					'id'      => $topic['id'],
+					'title'   => $topic['title'],
+					'content' => '<div class="pm-help-tab">' . wp_kses_post( $topic['content'] ) . '</div>',
+				)
+			);
+		}
+
+		$screen->set_help_sidebar(
+			'<p><strong>' . esc_html__( 'Purrfect Match', 'purrfect-match' ) . '</strong></p>'
+			/* translators: %s: author link. */
+			. '<p>' . sprintf( esc_html__( 'By %s', 'purrfect-match' ), '<a href="https://www.andrewmayes.com/" target="_blank" rel="noopener noreferrer">Andrew Mayes</a>' ) . '</p>'
+		);
+	}
+
+	/**
+	 * Render the inline "Help & Documentation" accordion on the settings page.
+	 *
+	 * @return void
+	 */
+	protected function render_help_section() {
+		?>
+		<div class="pm-admin-help">
+			<h2 class="pm-admin-help-title"><span aria-hidden="true">📖</span> <?php esc_html_e( 'Help & Documentation', 'purrfect-match' ); ?></h2>
+			<?php foreach ( $this->help_topics() as $i => $topic ) : ?>
+				<details class="pm-help-item"<?php echo 0 === $i ? ' open' : ''; ?>>
+					<summary><?php echo esc_html( $topic['title'] ); ?></summary>
+					<div class="pm-help-body"><?php echo wp_kses_post( $topic['content'] ); ?></div>
+				</details>
+			<?php endforeach; ?>
+		</div>
+		<?php
 	}
 
 	/**
@@ -705,6 +834,8 @@ class Purrfect_Match_Settings {
 					</div>
 				</aside>
 			</div>
+
+			<?php $this->render_help_section(); ?>
 		</div>
 		<?php
 	}
