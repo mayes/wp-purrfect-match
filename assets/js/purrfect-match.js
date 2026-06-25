@@ -445,7 +445,7 @@
 			if ( cfg.adoptionFormUrl ) {
 				ctas =
 					'<a class="pm-cta pm-cta-adopt" href="' + escapeHtml( adoptionLink( cat ) ) + '" target="_blank" rel="noopener noreferrer">💌 Apply to adopt</a>' +
-					'<a class="pm-cta-link" href="' + url + '" target="_blank" rel="noopener noreferrer">View details →</a>';
+					'<a class="pm-cta-view" href="' + url + '" target="_blank" rel="noopener noreferrer">View details</a>';
 			} else {
 				ctas =
 					'<a class="pm-cta" href="' + url + '" target="_blank" rel="noopener noreferrer">Boop to view <span class="pm-cta-arrow" aria-hidden="true">→</span> <span aria-hidden="true">✨</span></a>';

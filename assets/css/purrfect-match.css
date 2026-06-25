@@ -527,24 +527,45 @@
 .pm-media-link { display: block; }
 .pm-name-link { color: inherit; }
 
-/* CTA row: primary "Apply to adopt" + secondary "View details" */
+/* CTA row: "Apply to adopt" + "View details" side by side on one row */
 .pm-cta-row {
 	margin-top: 1rem;
 	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
+	flex-flow: row wrap;
 	gap: .5rem;
 }
 
 .pm-cta-row .pm-cta { margin-top: 0; }
 
-.pm-cta-link {
+/* Both buttons share the row equally and stay on one line. */
+.pm-cta-adopt,
+.pm-cta-view {
+	flex: 1 1 0;
+	justify-content: center;
 	font-size: .8rem;
-	font-weight: 700;
-	color: rgba(0, 0, 0, .5);
+	padding: .5rem .55rem;
+	white-space: nowrap;
 }
 
-.pm-wrap .pm-cta-link:hover { color: var(--pm-brand); }
+/* Secondary (outline) button for "View details". */
+.pm-cta-view {
+	display: inline-flex;
+	align-items: center;
+	gap: .35rem;
+	border-radius: 9999px;
+	font-weight: 900;
+	color: var(--pm-ink);
+	background: #fff;
+	box-shadow: inset 0 0 0 1px var(--pm-ring);
+	transition: transform .15s ease, box-shadow .15s ease, color .15s ease;
+}
+
+.pm-wrap .pm-cta-view:hover {
+	transform: translateY(-1px);
+	color: var(--pm-brand);
+	box-shadow: inset 0 0 0 1px rgba(233, 51, 150, .45);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pm-brand) 50%, var(--pm-ring));
+}
 
 /* ---------- Skeletons ---------- */
 
