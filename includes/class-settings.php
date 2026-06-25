@@ -579,6 +579,43 @@ class Purrfect_Match_Settings {
 	}
 
 	/**
+	 * Render each registered settings section wrapped in its own card, instead
+	 * of the default flat Settings API output. This is robust regardless of how
+	 * much intro markup a section prints.
+	 *
+	 * @return void
+	 */
+	protected function render_sections_as_cards() {
+		global $wp_settings_sections, $wp_settings_fields;
+
+		if ( ! isset( $wp_settings_sections[ self::PAGE ] ) ) {
+			return;
+		}
+
+		foreach ( (array) $wp_settings_sections[ self::PAGE ] as $section ) {
+			echo '<section class="pm-card-section">';
+
+			if ( ! empty( $section['title'] ) ) {
+				echo '<h2 class="pm-card-section-title">' . esc_html( $section['title'] ) . '</h2>';
+			}
+
+			if ( ! empty( $section['callback'] ) ) {
+				echo '<div class="pm-card-section-intro">';
+				call_user_func( $section['callback'], $section );
+				echo '</div>';
+			}
+
+			if ( isset( $wp_settings_fields[ self::PAGE ][ $section['id'] ] ) ) {
+				echo '<table class="form-table" role="presentation">';
+				do_settings_fields( self::PAGE, $section['id'] );
+				echo '</table>';
+			}
+
+			echo '</section>';
+		}
+	}
+
+	/**
 	 * Render the settings page wrapper.
 	 *
 	 * @return void
@@ -608,7 +645,7 @@ class Purrfect_Match_Settings {
 					<form action="options.php" method="post">
 						<?php
 						settings_fields( self::PAGE );
-						do_settings_sections( self::PAGE );
+						$this->render_sections_as_cards();
 						submit_button( __( 'Save changes', 'purrfect-match' ) );
 						?>
 					</form>
