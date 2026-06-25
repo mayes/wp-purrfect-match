@@ -48,20 +48,26 @@ class Purrfect_Match_Settings {
 	public static function defaults() {
 		return array(
 			// Listing source / query.
-			'organization'  => '',
-			'type'          => 'cat',
-			'status'        => 'adoptable',
-			'limit'         => 24,
-			'columns'       => 3,
-			'hide_breed'    => 0,
+			'organization'        => '',
+			'type'                => 'cat',
+			'status'              => 'adoptable',
+			'limit'               => 0,
+			'per_page'            => 24,
+			'columns'             => 3,
+			'hide_breed'          => 0,
+			'adoption_form_url'   => '',
 
 			// Presentation / copy.
-			'title'         => 'Find your purr-fect match',
-			'eyebrow'       => 'Adoptable Pets',
-			'subtitle'      => 'Filter by breed, size, and age.',
-			'brand'         => '#e93396',
-			'org_name'      => '',
-			'org_website'   => '',
+			'title'               => 'Find your purr-fect match',
+			'eyebrow'             => 'Adoptable Pets',
+			'subtitle'            => 'Filter by breed, size, and age.',
+			'brand'               => '#e93396',
+			'org_name'            => '',
+			'org_website'         => '',
+
+			// Fallback links (shown if the live listings can't load).
+			'adoptapet_url'       => '',
+			'petfinder_member_url' => '',
 
 			// Endpoints (advanced — rarely changed).
 			'api_base'      => 'https://psl.petfinder.com/graphql',
@@ -137,9 +143,11 @@ class Purrfect_Match_Settings {
 			'organization' => array( __( 'Petfinder organization ID(s)', 'purrfect-match' ), 'text', __( 'Your Petfinder display ID (e.g. FL1629) or UUID. Separate multiple with commas.', 'purrfect-match' ) ),
 			'type'         => array( __( 'Animal type', 'purrfect-match' ), 'type', __( 'Which kind of animal to list.', 'purrfect-match' ) ),
 			'status'       => array( __( 'Adoption status', 'purrfect-match' ), 'status', '' ),
-			'limit'        => array( __( 'Maximum pets to load', 'purrfect-match' ), 'number', __( '1–100. These are fetched once, then filtered instantly in the browser.', 'purrfect-match' ) ),
+			'limit'        => array( __( 'Maximum pets to load', 'purrfect-match' ), 'number', __( 'Leave at 0 to always show every adoptable pet (recommended — no need to update it as your numbers change). Set a number only to cap it.', 'purrfect-match' ) ),
+			'per_page'     => array( __( 'Pets per page', 'purrfect-match' ), 'number', __( 'How many to show before “Load more” (set 0 to show all at once).', 'purrfect-match' ) ),
 			'columns'      => array( __( 'Columns (desktop)', 'purrfect-match' ), 'columns', '' ),
 			'hide_breed'   => array( __( 'Hide breed', 'purrfect-match' ), 'checkbox', __( 'Hide the breed name and the breed filter.', 'purrfect-match' ) ),
+			'adoption_form_url' => array( __( 'Adoption form URL', 'purrfect-match' ), 'url', __( 'Optional. Adds an “Apply to adopt” button to each pet, linking here with ?pet=Name&pet_id=… so your form can prefill which pet.', 'purrfect-match' ) ),
 		);
 
 		foreach ( $listing_fields as $key => $cfg ) {
@@ -189,6 +197,33 @@ class Purrfect_Match_Settings {
 		}
 
 		add_settings_section(
+			'pm_section_fallback',
+			__( 'Fallback links', 'purrfect-match' ),
+			array( $this, 'section_fallback_intro' ),
+			self::PAGE
+		);
+
+		$fallback_fields = array(
+			'adoptapet_url'        => array( __( 'Adopt-a-Pet shelter URL', 'purrfect-match' ), 'url', __( 'Your Adopt-a-Pet listing page.', 'purrfect-match' ) ),
+			'petfinder_member_url' => array( __( 'Petfinder member URL', 'purrfect-match' ), 'url', __( 'Your public Petfinder shelter page.', 'purrfect-match' ) ),
+		);
+
+		foreach ( $fallback_fields as $key => $cfg ) {
+			add_settings_field(
+				'pm_' . $key,
+				$cfg[0],
+				array( $this, 'render_field' ),
+				self::PAGE,
+				'pm_section_fallback',
+				array(
+					'key'  => $key,
+					'type' => $cfg[1],
+					'desc' => $cfg[2],
+				)
+			);
+		}
+
+		add_settings_section(
 			'pm_section_advanced',
 			__( 'Advanced', 'purrfect-match' ),
 			array( $this, 'section_advanced_intro' ),
@@ -229,6 +264,15 @@ class Purrfect_Match_Settings {
 	}
 
 	/**
+	 * Fallback section intro copy.
+	 *
+	 * @return void
+	 */
+	public function section_fallback_intro() {
+		echo '<p>' . esc_html__( 'If the live listings ever fail to load, the widget can point visitors to your other adoption pages instead. Leave blank to just show a “try again” message.', 'purrfect-match' ) . '</p>';
+	}
+
+	/**
 	 * Advanced section intro copy.
 	 *
 	 * @return void
@@ -263,8 +307,10 @@ class Purrfect_Match_Settings {
 				break;
 
 			case 'number':
+				$min = in_array( $key, array( 'per_page', 'limit' ), true ) ? 0 : 1;
+				$max = ( 'limit' === $key ) ? 1000 : 100;
 				printf(
-					'<input type="number" min="1" max="100" step="1" id="%1$s" name="%2$s" value="%3$s" class="small-text" />',
+					'<input type="number" min="' . (int) $min . '" max="' . (int) $max . '" step="1" id="%1$s" name="%2$s" value="%3$s" class="small-text" />',
 					esc_attr( $id ),
 					esc_attr( $name ),
 					esc_attr( $value )
@@ -389,9 +435,11 @@ class Purrfect_Match_Settings {
 		$allowed_status = array( 'adoptable', 'adopted', 'found' );
 		$out['status']  = in_array( ( isset( $input['status'] ) ? $input['status'] : '' ), $allowed_status, true ) ? $input['status'] : $defaults['status'];
 
-		// Numbers.
-		$limit         = isset( $input['limit'] ) ? absint( $input['limit'] ) : $defaults['limit'];
-		$out['limit']  = max( 1, min( 100, $limit ) );
+		// Numbers. limit 0 = "all" (fetch everything, bounded by a safety ceiling).
+		$out['limit'] = isset( $input['limit'] ) ? min( 1000, absint( $input['limit'] ) ) : $defaults['limit'];
+
+		// Per page: 0 is allowed and means "show all at once".
+		$out['per_page'] = isset( $input['per_page'] ) ? min( 100, absint( $input['per_page'] ) ) : $defaults['per_page'];
 
 		$columns        = isset( $input['columns'] ) ? absint( $input['columns'] ) : $defaults['columns'];
 		$out['columns'] = max( 2, min( 4, $columns ) );
@@ -410,10 +458,13 @@ class Purrfect_Match_Settings {
 		$out['brand']  = preg_match( '/^#[0-9a-fA-F]{6}$/', $brand ) ? $brand : $defaults['brand'];
 
 		// URLs.
-		$out['org_website']   = esc_url_raw( isset( $input['org_website'] ) ? $input['org_website'] : $defaults['org_website'] );
-		$out['api_base']      = esc_url_raw( isset( $input['api_base'] ) ? $input['api_base'] : $defaults['api_base'] );
-		$out['s3_url']        = esc_url_raw( isset( $input['s3_url'] ) ? $input['s3_url'] : $defaults['s3_url'] );
-		$out['petfinder_url'] = esc_url_raw( isset( $input['petfinder_url'] ) ? $input['petfinder_url'] : $defaults['petfinder_url'] );
+		$out['org_website']          = esc_url_raw( isset( $input['org_website'] ) ? $input['org_website'] : $defaults['org_website'] );
+		$out['adoption_form_url']    = esc_url_raw( isset( $input['adoption_form_url'] ) ? $input['adoption_form_url'] : $defaults['adoption_form_url'] );
+		$out['adoptapet_url']        = esc_url_raw( isset( $input['adoptapet_url'] ) ? $input['adoptapet_url'] : $defaults['adoptapet_url'] );
+		$out['petfinder_member_url'] = esc_url_raw( isset( $input['petfinder_member_url'] ) ? $input['petfinder_member_url'] : $defaults['petfinder_member_url'] );
+		$out['api_base']             = esc_url_raw( isset( $input['api_base'] ) ? $input['api_base'] : $defaults['api_base'] );
+		$out['s3_url']               = esc_url_raw( isset( $input['s3_url'] ) ? $input['s3_url'] : $defaults['s3_url'] );
+		$out['petfinder_url']        = esc_url_raw( isset( $input['petfinder_url'] ) ? $input['petfinder_url'] : $defaults['petfinder_url'] );
 
 		// Reset the in-process cache so the new values are used immediately.
 		self::$cache = null;
@@ -430,16 +481,72 @@ class Purrfect_Match_Settings {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+
+		$options = self::get_options();
+		$brand   = preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $options['brand'] ) ? $options['brand'] : '#e93396';
+		$configured = '' !== trim( (string) $options['organization'] );
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-			<form action="options.php" method="post">
-				<?php
-				settings_fields( self::PAGE );
-				do_settings_sections( self::PAGE );
-				submit_button();
-				?>
-			</form>
+		<div class="wrap pm-admin" style="--pm-admin-brand: <?php echo esc_attr( $brand ); ?>;">
+
+			<div class="pm-admin-hero">
+				<h1>
+					<span aria-hidden="true">🐾</span>
+					<?php esc_html_e( 'Purrfect Match', 'purrfect-match' ); ?>
+					<span class="pm-ver">v<?php echo esc_html( PURRFECT_MATCH_VERSION ); ?></span>
+				</h1>
+				<p><?php esc_html_e( 'Show your shelter’s adoptable Petfinder pets in a beautiful, filterable grid — no API key required.', 'purrfect-match' ); ?></p>
+			</div>
+
+			<div class="pm-admin-cols">
+				<div class="pm-admin-main">
+					<form action="options.php" method="post">
+						<?php
+						settings_fields( self::PAGE );
+						do_settings_sections( self::PAGE );
+						submit_button( __( 'Save changes', 'purrfect-match' ) );
+						?>
+					</form>
+				</div>
+
+				<aside class="pm-admin-side">
+					<div class="pm-admin-card">
+						<h3><?php esc_html_e( 'Shortcode', 'purrfect-match' ); ?></h3>
+						<p><?php esc_html_e( 'Paste this into any page or post:', 'purrfect-match' ); ?></p>
+						<div class="pm-shortcode">
+							<code>[purrfect_match]</code>
+							<button type="button" class="pm-copy" data-clipboard="[purrfect_match]"><?php esc_html_e( 'Copy', 'purrfect-match' ); ?></button>
+						</div>
+					</div>
+
+					<div class="pm-admin-card">
+						<h3><?php esc_html_e( 'Getting started', 'purrfect-match' ); ?></h3>
+						<ol class="pm-admin-steps">
+							<li>
+								<?php
+								if ( $configured ) {
+									esc_html_e( 'Organization ID is set ✓', 'purrfect-match' );
+								} else {
+									esc_html_e( 'Enter your Petfinder organization ID (e.g. FL1629).', 'purrfect-match' );
+								}
+								?>
+							</li>
+							<li><?php esc_html_e( 'Adjust the look and filters to taste.', 'purrfect-match' ); ?></li>
+							<li><?php esc_html_e( 'Add the shortcode to a page.', 'purrfect-match' ); ?></li>
+						</ol>
+						<p><?php esc_html_e( 'Tip: leave “Maximum pets to load” at 0 to always show every pet.', 'purrfect-match' ); ?></p>
+					</div>
+
+					<div class="pm-admin-card pm-admin-credit">
+						<?php
+						printf(
+							/* translators: %s: author link. */
+							esc_html__( 'Made with 🐾 by %s', 'purrfect-match' ),
+							'<a href="https://www.andrewmayes.com/" target="_blank" rel="noopener noreferrer">Andrew Mayes</a>'
+						);
+						?>
+					</div>
+				</aside>
+			</div>
 		</div>
 		<?php
 	}

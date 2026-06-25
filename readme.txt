@@ -1,10 +1,10 @@
 === Purrfect Match ===
-Contributors: cjpaws
+Contributors: andrewmayes
 Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.5
 Requires PHP: 7.0
-Stable tag: 1.0.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,10 +88,32 @@ data and photos.
 
 == Changelog ==
 
+= 1.2.0 =
+* New: optional adoption-form integration — add an "Apply to adopt" button to each pet that links to your application form with the pet's name and ID (?pet=Name&pet_id=…) so the form can prefill which animal.
+
+= 1.1.0 =
+* New: loads every matching pet (paged) so filters cover the whole set, then shows them in batches with a "Load more" button (auto-loads on scroll). New "Pets per page" setting.
+* New: graceful fallback — if the live listings can't load, the widget can link to your Adopt-a-Pet and Petfinder pages instead of a dead end (new Fallback links settings).
+* New: visual flair — staggered card entrance, drifting banner accents, eyebrow heartbeat, richer card hover, and a branded bouncing-paw loading indicator.
+* Improved: custom-styled dropdowns; removed theme link underlines inside the widget.
+* Added a small "Plugin by Andrew Mayes" credit in the footer.
+
+= 1.0.1 =
+* Fix: pet card images now stay cropped to a fixed frame so themes that force `img { height: auto }` can no longer make photos overflow and cover the card body. Cards are equal height and content is always visible.
+
 = 1.0.0 =
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Adds optional "Apply to adopt" buttons linking each pet to your adoption form.
+
+= 1.1.0 =
+Adds full pagination (Load more), a down-for-maintenance fallback to your other adoption pages, and visual polish.
+
+= 1.0.1 =
+Layout fix for themes that override image sizing; cards now render consistently.
 
 = 1.0.0 =
 Initial release.

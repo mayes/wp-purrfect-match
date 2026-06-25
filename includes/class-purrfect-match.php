@@ -66,9 +66,37 @@ class Purrfect_Match {
 		$this->settings->hooks();
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
 		add_shortcode( 'purrfect_match', array( $this, 'render_shortcode' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( PURRFECT_MATCH_FILE ), array( $this, 'action_links' ) );
 		add_action( 'admin_notices', array( $this, 'maybe_setup_notice' ) );
+	}
+
+	/**
+	 * Enqueue admin assets, only on the plugin's settings screen.
+	 *
+	 * @param string $hook Current admin page hook suffix.
+	 * @return void
+	 */
+	public function admin_assets( $hook ) {
+		if ( 'settings_page_' . Purrfect_Match_Settings::PAGE !== $hook ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'purrfect-match-admin',
+			PURRFECT_MATCH_URL . 'assets/css/admin.css',
+			array(),
+			PURRFECT_MATCH_VERSION
+		);
+
+		wp_enqueue_script(
+			'purrfect-match-admin',
+			PURRFECT_MATCH_URL . 'assets/js/admin.js',
+			array(),
+			PURRFECT_MATCH_VERSION,
+			true
+		);
 	}
 
 	/**
@@ -164,28 +192,33 @@ class Purrfect_Match {
 
 		$atts = shortcode_atts(
 			array(
-				'organization'  => $options['organization'],
-				'type'          => $options['type'],
-				'status'        => $options['status'],
-				'limit'         => $options['limit'],
-				'columns'       => $options['columns'],
-				'hide_breed'    => $options['hide_breed'],
-				'title'         => $options['title'],
-				'eyebrow'       => $options['eyebrow'],
-				'subtitle'      => $options['subtitle'],
-				'brand'         => $options['brand'],
-				'org_name'      => $options['org_name'],
-				'org_website'   => $options['org_website'],
-				'api_base'      => $options['api_base'],
-				's3_url'        => $options['s3_url'],
-				'petfinder_url' => $options['petfinder_url'],
+				'organization'         => $options['organization'],
+				'type'                 => $options['type'],
+				'status'               => $options['status'],
+				'limit'                => $options['limit'],
+				'per_page'             => $options['per_page'],
+				'columns'              => $options['columns'],
+				'hide_breed'           => $options['hide_breed'],
+				'title'                => $options['title'],
+				'eyebrow'              => $options['eyebrow'],
+				'subtitle'             => $options['subtitle'],
+				'brand'                => $options['brand'],
+				'org_name'             => $options['org_name'],
+				'org_website'          => $options['org_website'],
+				'adoption_form_url'    => $options['adoption_form_url'],
+				'adoptapet_url'        => $options['adoptapet_url'],
+				'petfinder_member_url' => $options['petfinder_member_url'],
+				'api_base'             => $options['api_base'],
+				's3_url'               => $options['s3_url'],
+				'petfinder_url'        => $options['petfinder_url'],
 			),
 			$atts,
 			'purrfect_match'
 		);
 
-		// Normalize types.
-		$atts['limit']      = max( 1, min( 100, absint( $atts['limit'] ) ) );
+		// Normalize types. limit 0 = "all".
+		$atts['limit']      = min( 1000, absint( $atts['limit'] ) );
+		$atts['per_page']   = min( 100, absint( $atts['per_page'] ) );
 		$atts['columns']    = max( 2, min( 4, absint( $atts['columns'] ) ) );
 		$atts['hide_breed'] = $this->truthy( $atts['hide_breed'] );
 
@@ -210,15 +243,19 @@ class Purrfect_Match {
 			'apiBase'      => esc_url_raw( $atts['api_base'] ),
 			's3Url'        => esc_url_raw( $atts['s3_url'] ),
 			'petfinderUrl' => esc_url_raw( $atts['petfinder_url'] ),
-			'organization' => $orgs,
-			'type'         => sanitize_text_field( $atts['type'] ),
-			'status'       => sanitize_text_field( $atts['status'] ),
-			'limit'        => (int) $atts['limit'],
-			'hideBreed'    => (bool) $atts['hide_breed'],
-			'brand'        => $atts['brand'],
-			'orgName'      => sanitize_text_field( $atts['org_name'] ),
-			'canConfigure' => current_user_can( 'manage_options' ),
-			'settingsUrl'  => admin_url( 'options-general.php?page=' . Purrfect_Match_Settings::PAGE ),
+			'organization'      => $orgs,
+			'type'              => sanitize_text_field( $atts['type'] ),
+			'status'            => sanitize_text_field( $atts['status'] ),
+			'limit'             => (int) $atts['limit'],
+			'perPage'           => (int) $atts['per_page'],
+			'hideBreed'         => (bool) $atts['hide_breed'],
+			'brand'             => $atts['brand'],
+			'orgName'           => sanitize_text_field( $atts['org_name'] ),
+			'adoptionFormUrl'   => esc_url_raw( $atts['adoption_form_url'] ),
+			'adoptapetUrl'      => esc_url_raw( $atts['adoptapet_url'] ),
+			'petfinderMemberUrl' => esc_url_raw( $atts['petfinder_member_url'] ),
+			'canConfigure'      => current_user_can( 'manage_options' ),
+			'settingsUrl'       => admin_url( 'options-general.php?page=' . Purrfect_Match_Settings::PAGE ),
 		);
 	}
 

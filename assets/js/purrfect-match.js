@@ -3,7 +3,7 @@
  *
  * Loads adoptable pets directly from Petfinder's GraphQL endpoint in the
  * visitor's browser (no API key, no server round-trip), then powers the
- * filter / chip / shuffle / clear UI ported from the CJ Paws mockup.
+ * filter / chip / shuffle / clear UI from the widget's design mockup.
  *
  * The data layer mirrors Petfinder's own pet-scroller widget:
  *   - resolve organization display IDs (e.g. "FL1629") to UUIDs, then
@@ -50,6 +50,9 @@
 
 	var FILTER_ORDER = [ 'breed', 'size', 'age' ];
 	var FILTER_LABEL = { breed: 'Breed', size: 'Size', age: 'Age' };
+
+	// Per-request page size when fetching the full set (kept small for safety).
+	var PAGE_SIZE = 24;
 
 	// Short-lived localStorage cache: be a good citizen of the shared Petfinder
 	// endpoint by not re-fetching identical listings on every page view.
@@ -157,7 +160,9 @@
 		} );
 	}
 
-	function searchAnimals( cfg, orgUuids ) {
+	// Fetch one page. PAGE_SIZE is kept conservative (matches Petfinder's own
+	// widget) so the request is never rejected for an over-large page.
+	function searchPage( cfg, orgUuids, fromPage ) {
 		var filters = {
 			animal_type: [ cfg.type ],
 			adoption_status: cfg.status
@@ -168,10 +173,37 @@
 		var variables = {
 			isConsumer: true,
 			filters: filters,
-			pagination: { fromPage: 0, pageSize: cfg.limit }
+			pagination: { fromPage: fromPage, pageSize: PAGE_SIZE }
 		};
 		return gql( cfg.apiBase, SEARCH_QUERY, variables ).then( function ( data ) {
-			return ( data && data.searchAnimal && data.searchAnimal.animals ) || [];
+			var sa = ( data && data.searchAnimal ) || {};
+			return { totalCount: sa.totalCount || 0, animals: sa.animals || [] };
+		} );
+	}
+
+	// Fetch the full set for the org (up to cfg.limit). Page 0 first to learn
+	// totalCount, then the remaining pages in parallel — so filters and counts
+	// operate on every animal, not just the first page.
+	function fetchAllAnimals( cfg, orgUuids ) {
+		// limit 0 (or unset) = fetch all, bounded by a high safety ceiling.
+		var cap = cfg.limit > 0 ? cfg.limit : 1000;
+		return searchPage( cfg, orgUuids, 0 ).then( function ( first ) {
+			var animals = first.animals.slice();
+			var total = Math.min( first.totalCount || animals.length, cap );
+			if ( ! first.animals.length || animals.length >= total ) {
+				return animals.slice( 0, cap );
+			}
+			var pages = Math.ceil( total / PAGE_SIZE );
+			var rest = [];
+			for ( var p = 1; p < pages; p++ ) {
+				rest.push( searchPage( cfg, orgUuids, p ) );
+			}
+			return Promise.all( rest ).then( function ( results ) {
+				results.forEach( function ( r ) {
+					animals = animals.concat( r.animals );
+				} );
+				return animals.slice( 0, cap );
+			} );
 		} );
 	}
 
@@ -278,6 +310,13 @@
 			state[ k ] = 'all';
 		} );
 
+		// Pagination / incremental display state.
+		var perPage = ( typeof cfg.perPage === 'number' && cfg.perPage > 0 ) ? cfg.perPage : 0; // 0 = show all
+		var shown = perPage > 0 ? perPage : Infinity;
+		var filtered = [];
+		var renderedCount = 0;
+		var moreEl = root.querySelector( '[data-pm-more]' );
+
 		/* ---- value helpers ---- */
 
 		function uniqueValues( list, key ) {
@@ -347,6 +386,18 @@
 			);
 		}
 
+		// Build the adoption-form link for a pet, passing its name/id so the
+		// form can prefill which animal this application is for.
+		function adoptionLink( cat ) {
+			var base = cfg.adoptionFormUrl;
+			var sep = base.indexOf( '?' ) === -1 ? '?' : '&';
+			var q = 'pet=' + encodeURIComponent( cat.name || '' );
+			if ( cat.id ) {
+				q += '&pet_id=' + encodeURIComponent( cat.id );
+			}
+			return base + sep + q;
+		}
+
 		function card( cat ) {
 			var name = escapeHtml( cat.name );
 			var breed = escapeHtml( cat.breed );
@@ -357,27 +408,39 @@
 
 			var media = photo
 				? '<img class="pm-card-img" src="' + photo + '" alt="' + name + '" loading="lazy" />'
-				: '<div class="pm-card-noimg">🐾</div>';
+				: '<div class="pm-card-noimg" aria-hidden="true">🐾</div>';
 
 			var badgeHtml = badge ? '<div class="pm-badge">' + badge + '</div>' : '';
 			var breedHtml = ( ! cfg.hideBreed && breed ) ? '<div class="pm-breed">' + breed + '</div>' : '';
 			var locHtml = '<div class="pm-loc">' + ( loc || escapeHtml( cfg.orgName || '' ) ) + '</div>';
 
+			var ctas;
+			if ( cfg.adoptionFormUrl ) {
+				ctas =
+					'<a class="pm-cta pm-cta-adopt" href="' + escapeHtml( adoptionLink( cat ) ) + '" target="_blank" rel="noopener noreferrer">💌 Apply to adopt</a>' +
+					'<a class="pm-cta-link" href="' + url + '" target="_blank" rel="noopener noreferrer">View details →</a>';
+			} else {
+				ctas =
+					'<a class="pm-cta" href="' + url + '" target="_blank" rel="noopener noreferrer">Boop to view <span class="pm-cta-arrow" aria-hidden="true">→</span> <span aria-hidden="true">✨</span></a>';
+			}
+
 			return (
-				'<a class="pm-card" href="' + url + '" target="_blank" rel="noopener noreferrer">' +
+				'<div class="pm-card">' +
+				'<a class="pm-media-link" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="' + name + '">' +
 				'<div class="pm-card-media">' + media + badgeHtml + '</div>' +
+				'</a>' +
 				'<div class="pm-card-body">' +
 				'<div class="pm-card-head">' +
 				'<div>' +
-				'<div class="pm-name">' + name + '</div>' +
+				'<a class="pm-name-link" href="' + url + '" target="_blank" rel="noopener noreferrer"><span class="pm-name">' + name + '</span></a>' +
 				breedHtml +
 				locHtml +
 				'</div>' +
 				'<div class="pm-paw" aria-hidden="true">🐾</div>' +
 				'</div>' +
-				'<span class="pm-cta">Boop to view <span class="pm-cta-arrow" aria-hidden="true">→</span> <span aria-hidden="true">✨</span></span>' +
+				'<div class="pm-cta-row">' + ctas + '</div>' +
 				'</div>' +
-				'</a>'
+				'</div>'
 			);
 		}
 
@@ -411,7 +474,7 @@
 					if ( selects[ key ] ) {
 						selects[ key ].value = 'all';
 					}
-					render();
+					resetAndPaint();
 				} );
 			} );
 		}
@@ -442,12 +505,11 @@
 			grid.setAttribute( 'aria-busy', busy ? 'true' : 'false' );
 		}
 
-		function render() {
+		// Full (re)render of the visible window [0, shown).
+		function paint() {
 			readFilters();
 			renderChips();
-
-			var filtered = applyFilters( cats );
-			renderCount( filtered.length, cats.length );
+			filtered = applyFilters( cats );
 
 			if ( ! filtered.length ) {
 				grid.innerHTML =
@@ -458,12 +520,49 @@
 					'<button type="button" class="pm-btn pm-btn-brand" data-pm-action="clear">Clear filters</button>' +
 					'</div>';
 				wireActions();
+				renderedCount = 0;
+				if ( countEl ) {
+					countEl.innerHTML = '';
+				}
+				updateMore();
 				setBusy( false );
 				return;
 			}
 
-			grid.innerHTML = filtered.map( card ).join( '' );
+			var visible = filtered.slice( 0, shown );
+			grid.innerHTML = visible.map( card ).join( '' );
+			renderedCount = visible.length;
+			renderCount( renderedCount, filtered.length );
+			updateMore();
 			setBusy( false );
+		}
+
+		// Reveal the next batch by appending (existing cards don't re-animate).
+		function appendMore() {
+			if ( renderedCount >= filtered.length ) {
+				return;
+			}
+			shown = ( shown === Infinity ) ? filtered.length : ( shown + ( perPage > 0 ? perPage : filtered.length ) );
+			var next = filtered.slice( renderedCount, shown );
+			if ( next.length ) {
+				grid.insertAdjacentHTML( 'beforeend', next.map( card ).join( '' ) );
+				renderedCount += next.length;
+			}
+			renderCount( renderedCount, filtered.length );
+			updateMore();
+		}
+
+		function updateMore() {
+			if ( ! moreEl ) {
+				return;
+			}
+			moreEl.hidden = ! ( filtered.length > renderedCount );
+		}
+
+		// Reset to the first page and repaint (used on load / filter / shuffle).
+		function resetAndPaint() {
+			shown = perPage > 0 ? perPage : Infinity;
+			paint();
 		}
 
 		function hydrateFilterOptions() {
@@ -474,27 +573,57 @@
 		}
 
 		function showSkeletons() {
-			var n = Math.min( 6, Math.max( 3, parseInt( cfg.limit, 10 ) || 6 ) );
+			var n = Math.min( 6, Math.max( 3, perPage > 0 ? perPage : 6 ) );
 			var html = '';
 			for ( var i = 0; i < n; i++ ) {
 				html += skeletonCard();
 			}
 			grid.innerHTML = html;
+			if ( countEl ) {
+				countEl.innerHTML =
+					'<span class="pm-loading"><span class="pm-paws"><i>🐾</i><i>🐾</i><i>🐾</i></span> ' +
+					'Finding adoptable pets…</span>';
+			}
 		}
 
 		function showError( message ) {
-			grid.innerHTML =
-				'<div class="pm-error">' +
-				'<div class="pm-error-emoji">😿</div>' +
-				'<div class="pm-error-title">' + escapeHtml( message ) + '</div>' +
-				'<div class="pm-error-text">Please try again in a moment.</div>' +
-				'<button type="button" class="pm-btn pm-btn-brand" data-pm-action="retry">Try again</button>' +
-				'</div>';
+			// If the live listings can't load, point visitors to the shelter's
+			// other adoption pages (configured) instead of a dead end.
+			var links = '';
+			if ( cfg.adoptapetUrl ) {
+				links += '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( cfg.adoptapetUrl ) + '" target="_blank" rel="noopener noreferrer">🐾 View on Adopt-a-Pet</a>';
+			}
+			if ( cfg.petfinderMemberUrl ) {
+				links += '<a class="pm-btn" href="' + escapeHtml( cfg.petfinderMemberUrl ) + '" target="_blank" rel="noopener noreferrer">🔎 View on Petfinder</a>';
+			}
+
+			if ( links ) {
+				grid.innerHTML =
+					'<div class="pm-error">' +
+					'<div class="pm-error-emoji">🐾</div>' +
+					'<div class="pm-error-title">Our live listings are taking a cat nap</div>' +
+					'<div class="pm-error-text">No worries — browse our adoptable pets on these platforms:</div>' +
+					'<div class="pm-fallback-links">' + links + '</div>' +
+					'<button type="button" class="pm-link-btn" data-pm-action="retry">Try the live grid again</button>' +
+					'</div>';
+			} else {
+				grid.innerHTML =
+					'<div class="pm-error">' +
+					'<div class="pm-error-emoji">😿</div>' +
+					'<div class="pm-error-title">' + escapeHtml( message ) + '</div>' +
+					'<div class="pm-error-text">Please try again in a moment.</div>' +
+					'<button type="button" class="pm-btn pm-btn-brand" data-pm-action="retry">Try again</button>' +
+					'</div>';
+			}
+
 			if ( countEl ) {
 				countEl.innerHTML = '';
 			}
 			if ( chipsEl ) {
 				chipsEl.innerHTML = '';
+			}
+			if ( moreEl ) {
+				moreEl.hidden = true;
 			}
 			wireActions();
 			setBusy( false );
@@ -553,7 +682,7 @@
 				cats[ i ] = cats[ j ];
 				cats[ j ] = tmp;
 			}
-			render();
+			resetAndPaint();
 		}
 
 		function clear() {
@@ -563,7 +692,7 @@
 					selects[ k ].value = 'all';
 				}
 			} );
-			render();
+			resetAndPaint();
 		}
 
 		function load() {
@@ -587,7 +716,7 @@
 					return;
 				}
 				hydrateFilterOptions();
-				render();
+				resetAndPaint();
 				return;
 			}
 
@@ -598,7 +727,7 @@
 				if ( uuids.length === 0 ) {
 					throw new Error( 'We couldn’t find this shelter on Petfinder.' );
 				}
-				return searchAnimals( cfg, uuids );
+				return fetchAllAnimals( cfg, uuids );
 			} ).then( function ( animals ) {
 				cats = animals.map( function ( a ) {
 					return normalize( a, cfg );
@@ -609,7 +738,7 @@
 					return;
 				}
 				hydrateFilterOptions();
-				render();
+				resetAndPaint();
 			} ).catch( function ( err ) {
 				showError( ( err && err.message ) ? err.message : 'Something went wrong loading pets.' );
 			} );
@@ -631,15 +760,29 @@
 						clear();
 					} else if ( action === 'retry' ) {
 						load();
+					} else if ( action === 'more' ) {
+						appendMore();
 					}
 				} );
 			} );
 		}
 
 		activeKeys.forEach( function ( k ) {
-			selects[ k ].addEventListener( 'change', render );
+			selects[ k ].addEventListener( 'change', resetAndPaint );
 		} );
 		wireActions();
+
+		// Auto-load the next batch when the "Load more" button nears the viewport.
+		if ( moreEl && window.IntersectionObserver ) {
+			var io = new window.IntersectionObserver( function ( entries ) {
+				for ( var i = 0; i < entries.length; i++ ) {
+					if ( entries[ i ].isIntersecting && ! moreEl.hidden ) {
+						appendMore();
+					}
+				}
+			}, { rootMargin: '320px' } );
+			io.observe( moreEl );
+		}
 
 		load();
 	}
