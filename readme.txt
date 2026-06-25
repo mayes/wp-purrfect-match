@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.5
 Requires PHP: 7.0
-Stable tag: 1.3.1
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,9 @@ data and photos.
 
 == Changelog ==
 
+= 1.4.0 =
+* New: pet stories — each card can show the pet's description/bio from Petfinder (toggle in Settings, on by default). The widget auto-detects whether the field is available and safely falls back if not.
+
 = 1.3.1 =
 * Tweak: pet cards now show “Apply to adopt” and “View details” as two buttons side by side on one row.
 
@@ -112,6 +115,9 @@ data and photos.
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+Pet cards can now show each pet's story/description (auto-detected; toggle in Settings).
 
 = 1.3.1 =
 Pet cards show Apply and View as two buttons on one row.
