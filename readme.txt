@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.4.1
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,7 @@ organization ID and drop in the shortcode.
 * Fully brandable accent color and copy; 2–4 column layouts.
 * Accessible: labelled controls, `aria-live` updates, and reduced-motion support.
 * No API key, no cron, no stored pet data — listings are fetched on demand.
+* SEO-friendly: emits Schema.org structured data (AnimalShelter + a pet ItemList).
 
 == Installation ==
 
@@ -112,7 +113,8 @@ subject to Petfinder's terms and policies:
 
 == Changelog ==
 
-= 1.4.1 =
+= 1.5.0 =
+* New: SEO / structured data — outputs Schema.org JSON-LD (your shelter as an AnimalShelter, plus a pet ItemList) so search engines and AI assistants can understand your listings. Toggle in Settings.
 * New: Settings toggle to show or hide the "Plugin by …" credit in the widget footer.
 * Security: the shared cache can now only be refreshed by editors/admins (not lower-trust roles); pet bios are length-capped; URL outputs pass a scheme allow-list.
 * Maintenance: added a release build script and dev-file export rules, cache data is now removed on uninstall, small-screen (phone) layout polish, and an External services disclosure.
@@ -145,8 +147,8 @@ subject to Petfinder's terms and policies:
 
 == Upgrade Notice ==
 
-= 1.4.1 =
-Security hardening (editor/admin-only cache refresh), a release build script, and small-screen polish.
+= 1.5.0 =
+Adds SEO structured data (Schema.org), a plugin-credit toggle, security hardening, a build script, and small-screen polish.
 
 = 1.4.0 =
 Pet cards can now show each pet's story/description (auto-detected; toggle in Settings).

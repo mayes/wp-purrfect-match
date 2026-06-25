@@ -63,6 +63,7 @@ class Purrfect_Match_Settings {
 			'subtitle'            => 'Filter by breed, size, and age.',
 			'show_bios'           => 1,
 			'show_credit'         => 1,
+			'seo'                 => 1,
 			'brand'               => '#e93396',
 			'org_name'            => '',
 			'org_website'         => '',
@@ -302,6 +303,7 @@ class Purrfect_Match_Settings {
 		$performance_fields = array(
 			'server_cache'  => array( __( 'Shared cache', 'purrfect-match' ), 'checkbox', __( 'Serve a cached copy of the listings from this site so visitors don’t each call Petfinder. Refreshed automatically when a logged-in editor/admin views a page with the widget.', 'purrfect-match' ) ),
 			'cache_minutes' => array( __( 'Cache lifetime (minutes)', 'purrfect-match' ), 'number', __( 'How long a cached copy stays fresh before it’s refreshed.', 'purrfect-match' ) ),
+			'seo'           => array( __( 'SEO structured data', 'purrfect-match' ), 'checkbox', __( 'Output Schema.org data (your shelter as an AnimalShelter, plus a pet ItemList) to help search engines and AI assistants understand your listings.', 'purrfect-match' ) ),
 		);
 
 		foreach ( $performance_fields as $key => $cfg ) {
@@ -553,6 +555,7 @@ class Purrfect_Match_Settings {
 		$out['hide_breed']   = empty( $input['hide_breed'] ) ? 0 : 1;
 		$out['show_bios']    = empty( $input['show_bios'] ) ? 0 : 1;
 		$out['show_credit']  = empty( $input['show_credit'] ) ? 0 : 1;
+		$out['seo']          = empty( $input['seo'] ) ? 0 : 1;
 		$out['server_cache'] = empty( $input['server_cache'] ) ? 0 : 1;
 
 		// Cache lifetime (minutes).

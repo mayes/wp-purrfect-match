@@ -827,6 +827,32 @@
 		}
 
 		// Render a resolved set (handles the empty case).
+		// Inject an ItemList of the loaded pets as JSON-LD so search engines and
+		// AI crawlers that render JavaScript can understand the listing. Runs
+		// once per widget, over the full loaded set (not the filtered view).
+		function injectSchema( list ) {
+			if ( ! cfg.seo || root.__pmSchema || ! list || ! list.length ) {
+				return;
+			}
+			var items = [];
+			for ( var i = 0; i < list.length && i < 100; i++ ) {
+				var c = list[ i ];
+				var li = { '@type': 'ListItem', position: i + 1 };
+				if ( c.url ) { li.url = c.url; }
+				if ( c.name ) { li.name = c.name; }
+				if ( c.photo ) { li.image = c.photo; }
+				items.push( li );
+			}
+			var data = { '@context': 'https://schema.org', '@type': 'ItemList', itemListElement: items };
+			var s = document.createElement( 'script' );
+			s.type = 'application/ld+json';
+			s.className = 'pm-schema';
+			// Neutralize "</script>" / "<" inside names so the block can't break out.
+			s.textContent = JSON.stringify( data ).replace( /</g, '\\u003c' );
+			root.appendChild( s );
+			root.__pmSchema = true;
+		}
+
 		function useCats( list ) {
 			cats = list;
 			if ( ! cats.length ) {
@@ -834,6 +860,7 @@
 				return;
 			}
 			hydrateFilterOptions();
+			injectSchema( cats );
 			resetAndPaint();
 		}
 

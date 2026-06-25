@@ -20,6 +20,7 @@ $pm_org_name    = $atts['org_name'];
 $pm_org_website = $atts['org_website'];
 $pm_hide_breed  = ! empty( $atts['hide_breed'] );
 $pm_show_credit = ! empty( $atts['show_credit'] );
+$pm_schema_ld   = isset( $schema_ld ) ? $schema_ld : '';
 ?>
 <div
 	class="pm-wrap"
@@ -27,6 +28,9 @@ $pm_show_credit = ! empty( $atts['show_credit'] );
 	data-pm-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>"
 	style="--pm-brand: <?php echo esc_attr( $atts['brand'] ); ?>; --pm-cols: <?php echo (int) $atts['columns']; ?>;"
 >
+	<?php if ( '' !== $pm_schema_ld ) : ?>
+		<script type="application/ld+json"><?php echo $pm_schema_ld; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON-LD via wp_json_encode (slashes escaped). ?></script>
+	<?php endif; ?>
 	<div class="pm-shell">
 
 		<div class="pm-banner">

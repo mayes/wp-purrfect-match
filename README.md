@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.4.1-e93396" alt="Version 1.4.1">
+  <img src="https://img.shields.io/badge/version-1.5.0-e93396" alt="Version 1.5.0">
   <img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue" alt="License GPL-2.0-or-later">
   <img src="https://img.shields.io/badge/WordPress-5.6%2B-21759b" alt="WordPress 5.6+">
   <img src="https://img.shields.io/badge/PHP-7.0%2B-777bb4" alt="PHP 7.0+">
@@ -33,6 +33,7 @@
 | 🎨 **Fully brandable** | Your accent color, your copy, 2–4 column layouts. |
 | 📱 **Responsive** | Mobile-first grid that looks great from phone to desktop. |
 | ⚡ **Fast & private** | Optional shared cache; no visitor data collected; no API key to manage. |
+| 🔎 **SEO & AI ready** | Emits Schema.org JSON-LD (AnimalShelter + pet ItemList) for search engines and AI crawlers. |
 | ♿ **Accessible** | Labelled controls, `aria-live` updates, and reduced-motion support. |
 
 ## 🚀 Quick start
@@ -75,8 +76,9 @@ With per-instance overrides:
 | `org_website`  | *(empty)*                    | "Visit" link in the banner.                             |
 
 Settings also include toggles for **Show pet stories**, **Show plugin credit**,
-and an optional **Shared cache**. Advanced settings (`api_base`, `s3_url`,
-`petfinder_url`) match the public Petfinder widget and rarely need changing.
+**SEO structured data**, and an optional **Shared cache**. Advanced settings
+(`api_base`, `s3_url`, `petfinder_url`) match the public Petfinder widget and
+rarely need changing.
 
 ## ⚙️ How it works
 

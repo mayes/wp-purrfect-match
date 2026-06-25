@@ -50,6 +50,13 @@ class Purrfect_Match {
 	protected $instance_count = 0;
 
 	/**
+	 * Whether the page-level structured data has been emitted yet.
+	 *
+	 * @var bool
+	 */
+	protected $schema_emitted = false;
+
+	/**
 	 * Get the singleton.
 	 *
 	 * @return Purrfect_Match
@@ -299,12 +306,41 @@ class Purrfect_Match {
 			'canConfigure'      => current_user_can( 'manage_options' ),
 			'settingsUrl'       => admin_url( 'options-general.php?page=' . Purrfect_Match_Settings::PAGE ),
 			'serverCache'       => ! empty( $options['server_cache'] ),
+			'seo'               => ! empty( $options['seo'] ),
 			'restUrl'           => esc_url_raw( rest_url( Purrfect_Match_REST::NS . '/pets' ) ),
 			// Only emit a write nonce for users who can actually write, so a
 			// cached/anonymous page never carries a usable REST nonce.
 			'restNonce'         => current_user_can( 'edit_pages' ) ? wp_create_nonce( 'wp_rest' ) : '',
 			'canWrite'          => current_user_can( 'edit_pages' ),
 		);
+	}
+
+	/**
+	 * Build the page-level JSON-LD (the shelter as an AnimalShelter), at most
+	 * once per page. Returns a JSON string, or '' when disabled, already
+	 * emitted, or no organization name is set.
+	 *
+	 * @param array $atts Resolved attributes.
+	 * @return string
+	 */
+	protected function build_schema_ld( $atts ) {
+		$options = Purrfect_Match_Settings::get_options();
+		if ( empty( $options['seo'] ) || $this->schema_emitted || '' === (string) $atts['org_name'] ) {
+			return '';
+		}
+
+		$shelter = array(
+			'@context' => 'https://schema.org',
+			'@type'    => 'AnimalShelter',
+			'name'     => (string) $atts['org_name'],
+		);
+		if ( ! empty( $atts['org_website'] ) ) {
+			$shelter['url'] = esc_url_raw( $atts['org_website'] );
+		}
+
+		$this->schema_emitted = true;
+
+		return (string) wp_json_encode( $shelter );
 	}
 
 	/**
@@ -326,6 +362,7 @@ class Purrfect_Match {
 		$this->instance_count++;
 		$instance_id = 'pm-' . $this->instance_count;
 		$config      = $this->build_config( $atts );
+		$schema_ld   = $this->build_schema_ld( $atts );
 
 		ob_start();
 		include PURRFECT_MATCH_PATH . 'templates/widget.php';
