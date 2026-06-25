@@ -394,7 +394,29 @@
 
 /* ---------- Pet card ---------- */
 
+/* Card = 3D context + entrance/hover motion. The visible surface lives on the
+   front/back faces so a card with a story can flip to reveal it. */
 .pm-card {
+	display: flex;
+	flex-direction: column;
+	perspective: 1200px;
+	text-decoration: none;
+	color: inherit;
+	transition: transform .2s ease;
+}
+
+.pm-card-inner {
+	position: relative;
+	flex: 1 1 auto;
+	display: flex;
+	transform-style: preserve-3d;
+	transition: transform .6s cubic-bezier(.2, .7, .2, 1);
+}
+
+.pm-card.is-flipped .pm-card-inner { transform: rotateY(180deg); }
+
+.pm-card-front,
+.pm-card-back {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
@@ -402,20 +424,83 @@
 	background: #fff;
 	border: 1px solid var(--pm-ring);
 	box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
-	text-decoration: none;
-	color: inherit;
-	transition: transform .2s ease, box-shadow .2s ease;
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
 }
 
-.pm-card:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 14px 30px -18px rgba(0, 0, 0, .4);
+.pm-card-front {
+	flex: 1 1 auto;
+	width: 100%;
+	min-width: 0;
 }
 
-.pm-card:focus-visible {
-	outline: none;
+.pm-card-back {
+	position: absolute;
+	inset: 0;
+	transform: rotateY(180deg);
+	padding: 1.1rem;
+}
+
+.pm-card:focus-within .pm-card-front {
 	box-shadow: 0 0 0 2px rgba(233, 51, 150, .35);
 	box-shadow: 0 0 0 2px color-mix(in srgb, var(--pm-brand) 45%, transparent);
+}
+
+/* Flip controls + story back face */
+.pm-flip-btn {
+	appearance: none;
+	cursor: pointer;
+	border: 0;
+	display: inline-flex;
+	align-items: center;
+	gap: .35rem;
+	margin-top: .6rem;
+	align-self: flex-start;
+	border-radius: 9999px;
+	padding: .35rem .7rem;
+	font-size: .75rem;
+	font-weight: 800;
+	color: var(--pm-ink);
+	background: rgba(0, 0, 0, .04);
+	box-shadow: inset 0 0 0 1px var(--pm-ring);
+	transition: transform .15s ease, color .15s ease, box-shadow .15s ease;
+}
+
+.pm-wrap .pm-flip-btn:hover {
+	transform: translateY(-1px);
+	color: var(--pm-brand);
+	box-shadow: inset 0 0 0 1px rgba(233, 51, 150, .45);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pm-brand) 50%, var(--pm-ring));
+}
+
+.pm-back-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: .5rem;
+}
+
+.pm-back-name {
+	font-size: 1rem;
+	font-weight: 900;
+	color: var(--pm-ink);
+}
+
+.pm-flip-close {
+	margin-top: 0;
+	padding: .1rem .45rem;
+	font-size: .85rem;
+	line-height: 1;
+}
+
+.pm-back-story {
+	flex: 1 1 auto;
+	overflow: auto;
+	margin: .6rem 0;
+	font-size: .85rem;
+	line-height: 1.5;
+	color: rgba(0, 0, 0, .7);
+	white-space: pre-line;
 }
 
 /*
@@ -503,19 +588,6 @@
 	font-size: .75rem;
 	font-weight: 600;
 	color: rgba(0, 0, 0, .45);
-}
-
-/* Pet bio / story (clamped to two lines) */
-.pm-bio {
-	margin: .6rem 0 0;
-	font-size: .8rem;
-	line-height: 1.45;
-	color: rgba(0, 0, 0, .6);
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	line-clamp: 2;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
 }
 
 .pm-paw {
@@ -811,7 +883,8 @@
 .pm-grid .pm-card:nth-child(8) { animation-delay: .30s; }
 
 /* Richer hover */
-.pm-card:hover { transform: translateY(-4px); box-shadow: 0 22px 40px -22px rgba(0, 0, 0, .45); }
+.pm-card:hover { transform: translateY(-4px); }
+.pm-card:hover .pm-card-front { box-shadow: 0 22px 40px -22px rgba(0, 0, 0, .45); }
 .pm-card:hover .pm-card-img { transform: scale(1.06); }
 .pm-card:hover .pm-paw { animation: pm-wiggle .6s ease both; }
 .pm-card:hover .pm-cta {
