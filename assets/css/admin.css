@@ -82,37 +82,39 @@
 	.pm-admin-side { flex-basis: auto; width: 100%; position: static; }
 }
 
-/* ---------- Section cards (styling Settings API output) ---------- */
+/* ---------- Section cards ---------- */
 
-.pm-admin-main h2 {
-	margin: 0 0 0;
-	padding: 1rem 1.25rem .35rem;
+.pm-card-section {
+	background: #fff;
+	border: 1px solid var(--pm-admin-line);
+	border-radius: 14px;
+	padding: 1.1rem 1.25rem 1.25rem;
+	margin: 0 0 1.25rem;
+	box-shadow: 0 10px 30px -26px rgba(0, 0, 0, .5);
+}
+
+.pm-card-section-title {
+	display: flex;
+	align-items: center;
+	gap: .45rem;
+	margin: 0 0 .35rem;
+	padding: 0;
 	font-size: 1.05rem;
 	font-weight: 800;
 	color: var(--pm-admin-ink);
-	background: #fff;
-	border: 1px solid var(--pm-admin-line);
-	border-bottom: 0;
-	border-radius: 14px 14px 0 0;
-	margin-top: 1.25rem;
 }
 
-.pm-admin-main h2::before {
-	content: "🐾";
-	margin-right: .45rem;
-}
+.pm-card-section-title::before { content: "🐾"; }
 
-.pm-admin-main h2 + p {
-	margin: 0;
-	padding: 0 1.25rem .25rem;
-	background: #fff;
-	border-left: 1px solid var(--pm-admin-line);
-	border-right: 1px solid var(--pm-admin-line);
+.pm-card-section-intro {
 	color: #6b6571;
 	font-size: .88rem;
+	margin-bottom: .25rem;
 }
 
-.pm-admin-main h2 + p code,
+.pm-card-section-intro p { margin: .35rem 0; }
+
+.pm-card-section-intro code,
 .pm-admin-card code {
 	background: color-mix(in srgb, var(--pm-admin-brand) 12%, #f6f7f9);
 	padding: .12rem .4rem;
@@ -120,23 +122,17 @@
 	font-size: .85em;
 }
 
-.pm-admin-main .form-table {
-	margin: 0 0 0;
-	background: #fff;
-	border: 1px solid var(--pm-admin-line);
-	border-radius: 0 0 14px 14px;
-	box-shadow: 0 10px 30px -26px rgba(0, 0, 0, .5);
-	padding: .5rem 1.25rem 1rem;
-}
+.pm-card-section .form-table { margin: 0; }
 
-.pm-admin-main .form-table th {
+.pm-card-section .form-table th {
 	padding: 1rem 1rem 1rem 0;
 	font-weight: 700;
 	color: var(--pm-admin-ink);
 	width: 230px;
+	vertical-align: top;
 }
 
-.pm-admin-main .form-table td { padding: .85rem 0; }
+.pm-card-section .form-table td { padding: .85rem 0; }
 
 .pm-admin-main input[type="text"],
 .pm-admin-main input[type="url"],

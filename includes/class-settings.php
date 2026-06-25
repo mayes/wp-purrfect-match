@@ -69,6 +69,10 @@ class Purrfect_Match_Settings {
 			'adoptapet_url'       => '',
 			'petfinder_member_url' => '',
 
+			// Performance.
+			'server_cache'        => 1,
+			'cache_minutes'       => 15,
+
 			// Endpoints (advanced — rarely changed).
 			'api_base'      => 'https://psl.petfinder.com/graphql',
 			's3_url'        => 'https://dbw3zep4prcju.cloudfront.net/',
@@ -114,6 +118,67 @@ class Purrfect_Match_Settings {
 			self::PAGE,
 			array( $this, 'render_settings_page' )
 		);
+
+		add_management_page(
+			__( 'Petfinder Explorer', 'purrfect-match' ),
+			__( 'Petfinder Explorer', 'purrfect-match' ),
+			'manage_options',
+			self::PAGE . '-explorer',
+			array( $this, 'render_explorer_page' )
+		);
+	}
+
+	/**
+	 * Render the Petfinder Explorer tool page.
+	 *
+	 * @return void
+	 */
+	public function render_explorer_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		?>
+		<div class="wrap pm-explorer">
+			<h1><span aria-hidden="true">🔎</span> <?php esc_html_e( 'Petfinder Explorer', 'purrfect-match' ); ?></h1>
+			<p class="pmx-intro">
+				<?php esc_html_e( 'Run live GraphQL queries against Petfinder from your own site (where requests are allowed). Use “Discover extra fields” to see what data each animal exposes — handy for deciding what to show on cards.', 'purrfect-match' ); ?>
+			</p>
+
+			<div class="pmx-bar">
+				<label for="pmx-endpoint"><?php esc_html_e( 'Endpoint', 'purrfect-match' ); ?></label>
+				<input type="text" id="pmx-endpoint" class="pmx-endpoint regular-text" value="https://psl.petfinder.com/graphql" spellcheck="false" />
+			</div>
+
+			<div class="pmx-presets">
+				<button type="button" class="button" data-preset="org"><?php esc_html_e( 'GetOrganization', 'purrfect-match' ); ?></button>
+				<button type="button" class="button" data-preset="search"><?php esc_html_e( 'SearchAnimal', 'purrfect-match' ); ?></button>
+				<button type="button" class="button" data-preset="attrs"><?php esc_html_e( 'AllAnimalAttributes', 'purrfect-match' ); ?></button>
+				<button type="button" class="button" data-preset="introspect"><?php esc_html_e( 'Introspect Animal', 'purrfect-match' ); ?></button>
+				<button type="button" class="button button-primary" id="pmx-discover"><?php esc_html_e( '🔬 Discover extra fields', 'purrfect-match' ); ?></button>
+			</div>
+
+			<div class="pmx-cols">
+				<div class="pmx-pane">
+					<label class="pmx-lbl" for="pmx-query"><?php esc_html_e( 'Query', 'purrfect-match' ); ?></label>
+					<textarea id="pmx-query" spellcheck="false"></textarea>
+					<label class="pmx-lbl" for="pmx-vars"><?php esc_html_e( 'Variables (JSON)', 'purrfect-match' ); ?></label>
+					<textarea id="pmx-vars" spellcheck="false">{}</textarea>
+					<div class="pmx-run-row">
+						<button type="button" class="button pmx-run" id="pmx-run"><?php esc_html_e( 'Run ▶', 'purrfect-match' ); ?></button>
+						<span class="pmx-status" id="pmx-status"><?php esc_html_e( 'Ready', 'purrfect-match' ); ?></span>
+					</div>
+				</div>
+				<div class="pmx-pane">
+					<label class="pmx-lbl"><?php esc_html_e( 'Response', 'purrfect-match' ); ?></label>
+					<pre id="pmx-out"><?php esc_html_e( 'Pick a preset or click “Discover extra fields”, then Run.', 'purrfect-match' ); ?></pre>
+				</div>
+			</div>
+
+			<div class="pmx-tip">
+				<?php esc_html_e( 'Tip: “Discover extra fields” resolves your organization and probes which animal fields exist (description, photos, videos, sex, attributes, environment…). Paste the result to decide what to add to the cards.', 'purrfect-match' ); ?>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
@@ -224,6 +289,33 @@ class Purrfect_Match_Settings {
 		}
 
 		add_settings_section(
+			'pm_section_performance',
+			__( 'Performance', 'purrfect-match' ),
+			array( $this, 'section_performance_intro' ),
+			self::PAGE
+		);
+
+		$performance_fields = array(
+			'server_cache'  => array( __( 'Shared cache', 'purrfect-match' ), 'checkbox', __( 'Serve a cached copy of the listings from this site so visitors don’t each call Petfinder. Refreshed automatically when a logged-in editor/admin views a page with the widget.', 'purrfect-match' ) ),
+			'cache_minutes' => array( __( 'Cache lifetime (minutes)', 'purrfect-match' ), 'number', __( 'How long a cached copy stays fresh before it’s refreshed.', 'purrfect-match' ) ),
+		);
+
+		foreach ( $performance_fields as $key => $cfg ) {
+			add_settings_field(
+				'pm_' . $key,
+				$cfg[0],
+				array( $this, 'render_field' ),
+				self::PAGE,
+				'pm_section_performance',
+				array(
+					'key'  => $key,
+					'type' => $cfg[1],
+					'desc' => $cfg[2],
+				)
+			);
+		}
+
+		add_settings_section(
 			'pm_section_advanced',
 			__( 'Advanced', 'purrfect-match' ),
 			array( $this, 'section_advanced_intro' ),
@@ -273,6 +365,15 @@ class Purrfect_Match_Settings {
 	}
 
 	/**
+	 * Performance section intro copy.
+	 *
+	 * @return void
+	 */
+	public function section_performance_intro() {
+		echo '<p>' . esc_html__( 'Petfinder can’t be queried from the server, so listings load in the browser. The shared cache lets the first logged-in editor’s visit save a copy here that all visitors then read — fewer calls to Petfinder, faster loads.', 'purrfect-match' ) . '</p>';
+	}
+
+	/**
 	 * Advanced section intro copy.
 	 *
 	 * @return void
@@ -308,7 +409,7 @@ class Purrfect_Match_Settings {
 
 			case 'number':
 				$min = in_array( $key, array( 'per_page', 'limit' ), true ) ? 0 : 1;
-				$max = ( 'limit' === $key ) ? 1000 : 100;
+				$max = ( 'limit' === $key ) ? 1000 : ( ( 'cache_minutes' === $key ) ? 1440 : 100 );
 				printf(
 					'<input type="number" min="' . (int) $min . '" max="' . (int) $max . '" step="1" id="%1$s" name="%2$s" value="%3$s" class="small-text" />',
 					esc_attr( $id ),
@@ -444,8 +545,13 @@ class Purrfect_Match_Settings {
 		$columns        = isset( $input['columns'] ) ? absint( $input['columns'] ) : $defaults['columns'];
 		$out['columns'] = max( 2, min( 4, $columns ) );
 
-		// Checkbox.
-		$out['hide_breed'] = empty( $input['hide_breed'] ) ? 0 : 1;
+		// Checkboxes.
+		$out['hide_breed']   = empty( $input['hide_breed'] ) ? 0 : 1;
+		$out['server_cache'] = empty( $input['server_cache'] ) ? 0 : 1;
+
+		// Cache lifetime (minutes).
+		$cache_minutes        = isset( $input['cache_minutes'] ) ? absint( $input['cache_minutes'] ) : $defaults['cache_minutes'];
+		$out['cache_minutes'] = max( 1, min( 1440, $cache_minutes ) );
 
 		// Text copy.
 		$out['title']    = sanitize_text_field( isset( $input['title'] ) ? $input['title'] : $defaults['title'] );
@@ -470,6 +576,43 @@ class Purrfect_Match_Settings {
 		self::$cache = null;
 
 		return $out;
+	}
+
+	/**
+	 * Render each registered settings section wrapped in its own card, instead
+	 * of the default flat Settings API output. This is robust regardless of how
+	 * much intro markup a section prints.
+	 *
+	 * @return void
+	 */
+	protected function render_sections_as_cards() {
+		global $wp_settings_sections, $wp_settings_fields;
+
+		if ( ! isset( $wp_settings_sections[ self::PAGE ] ) ) {
+			return;
+		}
+
+		foreach ( (array) $wp_settings_sections[ self::PAGE ] as $section ) {
+			echo '<section class="pm-card-section">';
+
+			if ( ! empty( $section['title'] ) ) {
+				echo '<h2 class="pm-card-section-title">' . esc_html( $section['title'] ) . '</h2>';
+			}
+
+			if ( ! empty( $section['callback'] ) ) {
+				echo '<div class="pm-card-section-intro">';
+				call_user_func( $section['callback'], $section );
+				echo '</div>';
+			}
+
+			if ( isset( $wp_settings_fields[ self::PAGE ][ $section['id'] ] ) ) {
+				echo '<table class="form-table" role="presentation">';
+				do_settings_fields( self::PAGE, $section['id'] );
+				echo '</table>';
+			}
+
+			echo '</section>';
+		}
 	}
 
 	/**
@@ -502,7 +645,7 @@ class Purrfect_Match_Settings {
 					<form action="options.php" method="post">
 						<?php
 						settings_fields( self::PAGE );
-						do_settings_sections( self::PAGE );
+						$this->render_sections_as_cards();
 						submit_button( __( 'Save changes', 'purrfect-match' ) );
 						?>
 					</form>

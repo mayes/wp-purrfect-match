@@ -1,0 +1,120 @@
+/**
+ * Petfinder Explorer — wp-admin tool page.
+ * Runs from the site's own origin, which Petfinder allows (unlike file://).
+ */
+
+.pm-explorer { --pmx-brand: #e93396; max-width: 1100px; }
+
+.pm-explorer h1 { display: flex; align-items: center; gap: .5rem; }
+
+.pm-explorer .pmx-intro {
+	max-width: 70ch;
+	color: #50575e;
+}
+
+.pm-explorer .pmx-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .5rem;
+	align-items: center;
+	margin: .75rem 0;
+}
+
+.pm-explorer .pmx-bar label { font-weight: 600; }
+
+.pm-explorer input[type="text"].pmx-endpoint {
+	flex: 1;
+	min-width: 320px;
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+.pm-explorer .pmx-presets {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .4rem;
+	margin-bottom: .75rem;
+}
+
+.pm-explorer .pmx-presets .button { font-size: 12px; }
+
+.pm-explorer .pmx-cols {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+	align-items: stretch;
+}
+
+@media ( max-width: 900px ) {
+	.pm-explorer .pmx-cols { grid-template-columns: 1fr; }
+}
+
+.pm-explorer .pmx-pane { display: flex; flex-direction: column; min-height: 0; }
+
+.pm-explorer label.pmx-lbl {
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: #646970;
+	margin: .25rem 0;
+	font-weight: 700;
+}
+
+.pm-explorer textarea {
+	width: 100%;
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 13px;
+	border-radius: 8px;
+	resize: vertical;
+}
+
+.pm-explorer #pmx-query { min-height: 280px; }
+.pm-explorer #pmx-vars { min-height: 90px; }
+
+.pm-explorer .pmx-run-row {
+	display: flex;
+	align-items: center;
+	gap: .75rem;
+	margin: .5rem 0;
+}
+
+.pm-explorer .button.pmx-run {
+	background: var(--pmx-brand);
+	border-color: var(--pmx-brand);
+	color: #fff;
+}
+
+.pm-explorer .pmx-status { font-size: 12px; color: #646970; }
+.pm-explorer .pmx-status.ok { color: #0a7d33; font-weight: 700; }
+.pm-explorer .pmx-status.err { color: #c0143c; font-weight: 700; }
+
+.pm-explorer #pmx-out {
+	flex: 1;
+	margin: 0;
+	padding: 12px;
+	min-height: 420px;
+	overflow: auto;
+	background: #0b1021;
+	color: #e6e6e6;
+	border-radius: 8px;
+	font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.pm-explorer .pmx-tip {
+	margin-top: 1rem;
+	padding: .75rem 1rem;
+	background: #fff;
+	border-left: 3px solid var(--pmx-brand);
+	border-radius: 4px;
+	font-size: 13px;
+	color: #50575e;
+	max-width: 80ch;
+}
+
+.pm-explorer code {
+	background: #f0edef;
+	padding: 1px 5px;
+	border-radius: 4px;
+}

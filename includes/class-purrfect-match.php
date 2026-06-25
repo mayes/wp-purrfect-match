@@ -29,6 +29,13 @@ class Purrfect_Match {
 	public $settings;
 
 	/**
+	 * REST controller (shared cache).
+	 *
+	 * @var Purrfect_Match_REST
+	 */
+	public $rest;
+
+	/**
 	 * Whether assets have been enqueued for this request.
 	 *
 	 * @var bool
@@ -65,6 +72,9 @@ class Purrfect_Match {
 		$this->settings = new Purrfect_Match_Settings();
 		$this->settings->hooks();
 
+		$this->rest = new Purrfect_Match_REST();
+		$this->rest->hooks();
+
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
 		add_shortcode( 'purrfect_match', array( $this, 'render_shortcode' ) );
@@ -79,24 +89,51 @@ class Purrfect_Match {
 	 * @return void
 	 */
 	public function admin_assets( $hook ) {
-		if ( 'settings_page_' . Purrfect_Match_Settings::PAGE !== $hook ) {
+		// Settings screen.
+		if ( 'settings_page_' . Purrfect_Match_Settings::PAGE === $hook ) {
+			wp_enqueue_style(
+				'purrfect-match-admin',
+				PURRFECT_MATCH_URL . 'assets/css/admin.css',
+				array(),
+				PURRFECT_MATCH_VERSION
+			);
+			wp_enqueue_script(
+				'purrfect-match-admin',
+				PURRFECT_MATCH_URL . 'assets/js/admin.js',
+				array(),
+				PURRFECT_MATCH_VERSION,
+				true
+			);
 			return;
 		}
 
-		wp_enqueue_style(
-			'purrfect-match-admin',
-			PURRFECT_MATCH_URL . 'assets/css/admin.css',
-			array(),
-			PURRFECT_MATCH_VERSION
-		);
+		// Petfinder Explorer tool screen.
+		if ( 'tools_page_' . Purrfect_Match_Settings::PAGE . '-explorer' === $hook ) {
+			$options = Purrfect_Match_Settings::get_options();
+			$orgs    = array_filter( array_map( 'trim', explode( ',', (string) $options['organization'] ) ) );
 
-		wp_enqueue_script(
-			'purrfect-match-admin',
-			PURRFECT_MATCH_URL . 'assets/js/admin.js',
-			array(),
-			PURRFECT_MATCH_VERSION,
-			true
-		);
+			wp_enqueue_style(
+				'purrfect-match-explorer',
+				PURRFECT_MATCH_URL . 'assets/css/explorer.css',
+				array(),
+				PURRFECT_MATCH_VERSION
+			);
+			wp_enqueue_script(
+				'purrfect-match-explorer',
+				PURRFECT_MATCH_URL . 'assets/js/explorer.js',
+				array(),
+				PURRFECT_MATCH_VERSION,
+				true
+			);
+			wp_localize_script(
+				'purrfect-match-explorer',
+				'PM_EXPLORER',
+				array(
+					'org'  => $orgs ? reset( $orgs ) : 'FL1629',
+					'type' => $options['type'],
+				)
+			);
+		}
 	}
 
 	/**
@@ -239,6 +276,8 @@ class Purrfect_Match {
 		$orgs = array_filter( array_map( 'trim', explode( ',', (string) $atts['organization'] ) ) );
 		$orgs = array_values( $orgs );
 
+		$options = Purrfect_Match_Settings::get_options();
+
 		return array(
 			'apiBase'      => esc_url_raw( $atts['api_base'] ),
 			's3Url'        => esc_url_raw( $atts['s3_url'] ),
@@ -256,6 +295,10 @@ class Purrfect_Match {
 			'petfinderMemberUrl' => esc_url_raw( $atts['petfinder_member_url'] ),
 			'canConfigure'      => current_user_can( 'manage_options' ),
 			'settingsUrl'       => admin_url( 'options-general.php?page=' . Purrfect_Match_Settings::PAGE ),
+			'serverCache'       => ! empty( $options['server_cache'] ),
+			'restUrl'           => esc_url_raw( rest_url( Purrfect_Match_REST::NS . '/pets' ) ),
+			'restNonce'         => wp_create_nonce( 'wp_rest' ),
+			'canWrite'          => current_user_can( 'edit_posts' ),
 		);
 	}
 

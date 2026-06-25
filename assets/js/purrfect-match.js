@@ -271,6 +271,33 @@
 		}
 	}
 
+	// Shared (server) cache: visitors read; only capable, logged-in users write.
+	function serverGet( cfg ) {
+		var url = cfg.restUrl + ( cfg.restUrl.indexOf( '?' ) === -1 ? '?' : '&' ) + 'key=' + encodeURIComponent( cacheKey( cfg ) );
+		return fetch( url, { headers: { Accept: 'application/json' } } )
+			.then( function ( r ) {
+				return r.ok ? r.json() : null;
+			} )
+			.then( function ( j ) {
+				return ( j && Array.isArray( j.cats ) ) ? j.cats : null;
+			} )
+			.catch( function () {
+				return null;
+			} );
+	}
+
+	function serverPut( cfg, cats ) {
+		try {
+			fetch( cfg.restUrl, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': cfg.restNonce || '' },
+				body: JSON.stringify( { key: cacheKey( cfg ), cats: cats } )
+			} ).catch( function () {} );
+		} catch ( e ) {
+			/* best-effort refresh */
+		}
+	}
+
 	/* ----------------------------------------------------------------- */
 	/* Per-widget controller.                                            */
 	/* ----------------------------------------------------------------- */
@@ -695,6 +722,41 @@
 			resetAndPaint();
 		}
 
+		// Render a resolved set (handles the empty case).
+		function useCats( list ) {
+			cats = list;
+			if ( ! cats.length ) {
+				showEmpty();
+				return;
+			}
+			hydrateFilterOptions();
+			resetAndPaint();
+		}
+
+		// Fetch live from Petfinder, cache locally, and (for capable users)
+		// refresh the shared server cache for everyone else.
+		function liveFetch() {
+			showSkeletons();
+			resolveOrgs( cfg.apiBase, cfg.organization ).then( function ( uuids ) {
+				// Safety guard: organizations were configured but none resolved.
+				if ( uuids.length === 0 ) {
+					throw new Error( 'We couldn’t find this shelter on Petfinder.' );
+				}
+				return fetchAllAnimals( cfg, uuids );
+			} ).then( function ( animals ) {
+				var list = animals.map( function ( a ) {
+					return normalize( a, cfg );
+				} );
+				writeCache( cfg, list );
+				if ( cfg.serverCache && cfg.canWrite && cfg.restUrl && list.length ) {
+					serverPut( cfg, list );
+				}
+				useCats( list );
+			} ).catch( function ( err ) {
+				showError( ( err && err.message ) ? err.message : 'Something went wrong loading pets.' );
+			} );
+		}
+
 		function load() {
 			var orgs = Array.isArray( cfg.organization ) ? cfg.organization : [];
 
@@ -707,41 +769,29 @@
 
 			setBusy( true );
 
-			// Serve from the short-lived cache when fresh, to spare the endpoint.
+			// 1. Per-visitor cache (fastest).
 			var cached = readCache( cfg );
 			if ( cached ) {
-				cats = cached;
-				if ( ! cats.length ) {
-					showEmpty();
-					return;
-				}
-				hydrateFilterOptions();
-				resetAndPaint();
+				useCats( cached );
 				return;
 			}
 
-			showSkeletons();
+			// 2. Shared server cache (one fast read, no Petfinder call).
+			if ( cfg.serverCache && cfg.restUrl ) {
+				showSkeletons();
+				serverGet( cfg ).then( function ( serverCats ) {
+					if ( serverCats ) {
+						writeCache( cfg, serverCats );
+						useCats( serverCats );
+					} else {
+						liveFetch();
+					}
+				} ).catch( liveFetch );
+				return;
+			}
 
-			resolveOrgs( cfg.apiBase, orgs ).then( function ( uuids ) {
-				// Safety guard: organizations were configured but none resolved.
-				if ( uuids.length === 0 ) {
-					throw new Error( 'We couldn’t find this shelter on Petfinder.' );
-				}
-				return fetchAllAnimals( cfg, uuids );
-			} ).then( function ( animals ) {
-				cats = animals.map( function ( a ) {
-					return normalize( a, cfg );
-				} );
-				writeCache( cfg, cats );
-				if ( ! cats.length ) {
-					showEmpty();
-					return;
-				}
-				hydrateFilterOptions();
-				resetAndPaint();
-			} ).catch( function ( err ) {
-				showError( ( err && err.message ) ? err.message : 'Something went wrong loading pets.' );
-			} );
+			// 3. Live from Petfinder.
+			liveFetch();
 		}
 
 		/* ---- event wiring ---- */

@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.5
 Requires PHP: 7.0
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ data and photos.
 
 == Changelog ==
 
+= 1.3.0 =
+* New: optional shared server-side cache — visitors read a cached copy from your site (fewer calls to Petfinder, faster loads); refreshed by logged-in editors/admins viewing the page. Cache lifetime is configurable.
+* New: Petfinder Explorer tool (Tools → Petfinder Explorer) to run live queries from your site and "Discover extra fields" the API exposes.
+
 = 1.2.0 =
 * New: optional adoption-form integration — add an "Apply to adopt" button to each pet that links to your application form with the pet's name and ID (?pet=Name&pet_id=…) so the form can prefill which animal.
 
@@ -105,6 +109,9 @@ data and photos.
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+Adds an optional shared cache (fewer Petfinder calls) and a Petfinder Explorer tool.
 
 = 1.2.0 =
 Adds optional "Apply to adopt" buttons linking each pet to your adoption form.
