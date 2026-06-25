@@ -1,0 +1,13 @@
+# Excluded from the distributed plugin (wp dist-archive / build script).
+/.git
+/.github
+/.gitignore
+/.gitattributes
+/.distignore
+/.claude
+/bin
+/tools
+/examples
+/dist
+/README.md
+/CONTRIBUTING.md

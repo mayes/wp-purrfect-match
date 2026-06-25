@@ -383,6 +383,15 @@
 	.pm-grid { grid-template-columns: repeat(var(--pm-cols, 3), minmax(0, 1fr)); }
 }
 
+/* Small phones: reclaim horizontal space and give the (now full-width) cards a
+   more prominent hero photo. */
+@media (max-width: 480px) {
+	.pm-banner { padding: 1.15rem; }
+	.pm-body { padding: 1.15rem; }
+	.pm-title { font-size: 1.35rem; }
+	.pm-card-media { height: 14rem; }
+}
+
 /* ---------- Pet card ---------- */
 
 .pm-card {
@@ -438,8 +447,6 @@
 	display: block !important;
 	transition: transform .3s ease;
 }
-
-.pm-card:hover .pm-card-img { transform: scale(1.03); }
 
 .pm-card-noimg {
 	position: absolute;

@@ -153,9 +153,7 @@
 								return;
 							}
 						}
-						var valid = Object.keys( cand ).filter( function ( k ) {
-							return k !== 'description' || true;
-						} );
+						var valid = Object.keys( cand );
 						var sample = jj.data && jj.data.searchAnimal && jj.data.searchAnimal.animals && jj.data.searchAnimal.animals[ 0 ];
 						out(
 							'✓ Extra fields that EXIST on each animal:\n  ' + valid.join( ', ' ) +
