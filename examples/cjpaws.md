@@ -14,7 +14,8 @@ Go to **Settings → Purrfect Match** and enter:
 | Petfinder organization ID | `FL1629`                    |
 | Animal type            | Cats                           |
 | Adoption status        | Adoptable                      |
-| Maximum pets to load   | `24`                           |
+| Maximum pets to load   | `100`                          |
+| Pets per page          | `24`                           |
 | Columns (desktop)      | `3`                            |
 | Hide breed             | Off (show breed + breed filter) |
 | Heading                | `Find your purr-fect match`    |
@@ -23,6 +24,8 @@ Go to **Settings → Purrfect Match** and enter:
 | Brand color            | `#e93396`                      |
 | Organization name      | `CJ Paws`                      |
 | Organization website   | `https://cjpaws.org`           |
+| Adopt-a-Pet shelter URL | `https://www.adoptapet.com/shelter/152978-cjpaws-rescue-st-petersburg-florida` |
+| Petfinder member URL   | `https://www.petfinder.com/member/us/fl/st-petersburg/cjpaws-inc-fl1629/` |
 
 Then add `[purrfect_match]` to any page or post.
 
@@ -36,7 +39,8 @@ specific page, or if the site is shared):
   organization="FL1629"
   type="cat"
   status="adoptable"
-  limit="24"
+  limit="100"
+  per_page="24"
   columns="3"
   hide_breed="false"
   title="Find your purr-fect match"
@@ -44,7 +48,9 @@ specific page, or if the site is shared):
   subtitle="Filter by breed, size, and age."
   brand="#e93396"
   org_name="CJ Paws"
-  org_website="https://cjpaws.org"]
+  org_website="https://cjpaws.org"
+  adoptapet_url="https://www.adoptapet.com/shelter/152978-cjpaws-rescue-st-petersburg-florida"
+  petfinder_member_url="https://www.petfinder.com/member/us/fl/st-petersburg/cjpaws-inc-fl1629/"]
 ```
 
 ## Notes

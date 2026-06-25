@@ -120,6 +120,13 @@ $pm_hide_breed  = ! empty( $atts['hide_breed'] );
 
 		<div class="pm-body">
 			<div class="pm-grid" data-pm-grid aria-busy="false" aria-live="polite"></div>
+
+			<div class="pm-more" data-pm-more hidden>
+				<button type="button" class="pm-btn pm-btn-brand" data-pm-action="more">
+					<?php esc_html_e( 'Load more', 'purrfect-match' ); ?>
+				</button>
+			</div>
+
 			<div class="pm-footer">
 				<?php
 				if ( '' !== $pm_org_name ) {
@@ -129,6 +136,15 @@ $pm_hide_breed  = ! empty( $atts['hide_breed'] );
 					esc_html_e( 'Adoptable pets via Petfinder', 'purrfect-match' );
 				}
 				?>
+				<span class="pm-credit">
+					<?php
+					printf(
+						/* translators: %s: author link. */
+						esc_html__( 'Plugin by %s', 'purrfect-match' ),
+						'<a href="https://www.andrewmayes.com/" target="_blank" rel="noopener noreferrer">Andrew Mayes</a>'
+					);
+					?>
+				</span>
 			</div>
 		</div>
 
