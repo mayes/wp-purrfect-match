@@ -24,6 +24,7 @@ Go to **Settings → Purrfect Match** and enter:
 | Brand color            | `#e93396`                      |
 | Organization name      | `CJ Paws`                      |
 | Organization website   | `https://cjpaws.org`           |
+| Adoption form URL      | `https://cjpaws.org/adopt/adoption-application/` |
 | Adopt-a-Pet shelter URL | `https://www.adoptapet.com/shelter/152978-cjpaws-rescue-st-petersburg-florida` |
 | Petfinder member URL   | `https://www.petfinder.com/member/us/fl/st-petersburg/cjpaws-inc-fl1629/` |
 
@@ -49,6 +50,7 @@ specific page, or if the site is shared):
   brand="#e93396"
   org_name="CJ Paws"
   org_website="https://cjpaws.org"
+  adoption_form_url="https://cjpaws.org/adopt/adoption-application/"
   adoptapet_url="https://www.adoptapet.com/shelter/152978-cjpaws-rescue-st-petersburg-florida"
   petfinder_member_url="https://www.petfinder.com/member/us/fl/st-petersburg/cjpaws-inc-fl1629/"]
 ```

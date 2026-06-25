@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.5
 Requires PHP: 7.0
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,9 @@ data and photos.
 
 == Changelog ==
 
+= 1.2.0 =
+* New: optional adoption-form integration — add an "Apply to adopt" button to each pet that links to your application form with the pet's name and ID (?pet=Name&pet_id=…) so the form can prefill which animal.
+
 = 1.1.0 =
 * New: loads every matching pet (paged) so filters cover the whole set, then shows them in batches with a "Load more" button (auto-loads on scroll). New "Pets per page" setting.
 * New: graceful fallback — if the live listings can't load, the widget can link to your Adopt-a-Pet and Petfinder pages instead of a dead end (new Fallback links settings).
@@ -102,6 +105,9 @@ data and photos.
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Adds optional "Apply to adopt" buttons linking each pet to your adoption form.
 
 = 1.1.0 =
 Adds full pagination (Load more), a down-for-maintenance fallback to your other adoption pages, and visual polish.

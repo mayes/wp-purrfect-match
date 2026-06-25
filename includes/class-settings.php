@@ -55,6 +55,7 @@ class Purrfect_Match_Settings {
 			'per_page'            => 24,
 			'columns'             => 3,
 			'hide_breed'          => 0,
+			'adoption_form_url'   => '',
 
 			// Presentation / copy.
 			'title'               => 'Find your purr-fect match',
@@ -146,6 +147,7 @@ class Purrfect_Match_Settings {
 			'per_page'     => array( __( 'Pets per page', 'purrfect-match' ), 'number', __( 'How many to show before “Load more” (set 0 to show all at once).', 'purrfect-match' ) ),
 			'columns'      => array( __( 'Columns (desktop)', 'purrfect-match' ), 'columns', '' ),
 			'hide_breed'   => array( __( 'Hide breed', 'purrfect-match' ), 'checkbox', __( 'Hide the breed name and the breed filter.', 'purrfect-match' ) ),
+			'adoption_form_url' => array( __( 'Adoption form URL', 'purrfect-match' ), 'url', __( 'Optional. Adds an “Apply to adopt” button to each pet, linking here with ?pet=Name&pet_id=… so your form can prefill which pet.', 'purrfect-match' ) ),
 		);
 
 		foreach ( $listing_fields as $key => $cfg ) {
@@ -457,6 +459,7 @@ class Purrfect_Match_Settings {
 
 		// URLs.
 		$out['org_website']          = esc_url_raw( isset( $input['org_website'] ) ? $input['org_website'] : $defaults['org_website'] );
+		$out['adoption_form_url']    = esc_url_raw( isset( $input['adoption_form_url'] ) ? $input['adoption_form_url'] : $defaults['adoption_form_url'] );
 		$out['adoptapet_url']        = esc_url_raw( isset( $input['adoptapet_url'] ) ? $input['adoptapet_url'] : $defaults['adoptapet_url'] );
 		$out['petfinder_member_url'] = esc_url_raw( isset( $input['petfinder_member_url'] ) ? $input['petfinder_member_url'] : $defaults['petfinder_member_url'] );
 		$out['api_base']             = esc_url_raw( isset( $input['api_base'] ) ? $input['api_base'] : $defaults['api_base'] );

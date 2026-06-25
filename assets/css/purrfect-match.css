@@ -523,6 +523,29 @@
 .pm-cta-arrow { transition: transform .2s ease; }
 .pm-card:hover .pm-cta-arrow { transform: translateX(2px); }
 
+/* Card links (card is a container; image + name link to the detail page) */
+.pm-media-link { display: block; }
+.pm-name-link { color: inherit; }
+
+/* CTA row: primary "Apply to adopt" + secondary "View details" */
+.pm-cta-row {
+	margin-top: 1rem;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: .5rem;
+}
+
+.pm-cta-row .pm-cta { margin-top: 0; }
+
+.pm-cta-link {
+	font-size: .8rem;
+	font-weight: 700;
+	color: rgba(0, 0, 0, .5);
+}
+
+.pm-wrap .pm-cta-link:hover { color: var(--pm-brand); }
+
 /* ---------- Skeletons ---------- */
 
 .pm-skel {

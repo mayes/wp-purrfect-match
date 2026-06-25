@@ -386,6 +386,18 @@
 			);
 		}
 
+		// Build the adoption-form link for a pet, passing its name/id so the
+		// form can prefill which animal this application is for.
+		function adoptionLink( cat ) {
+			var base = cfg.adoptionFormUrl;
+			var sep = base.indexOf( '?' ) === -1 ? '?' : '&';
+			var q = 'pet=' + encodeURIComponent( cat.name || '' );
+			if ( cat.id ) {
+				q += '&pet_id=' + encodeURIComponent( cat.id );
+			}
+			return base + sep + q;
+		}
+
 		function card( cat ) {
 			var name = escapeHtml( cat.name );
 			var breed = escapeHtml( cat.breed );
@@ -396,27 +408,39 @@
 
 			var media = photo
 				? '<img class="pm-card-img" src="' + photo + '" alt="' + name + '" loading="lazy" />'
-				: '<div class="pm-card-noimg">🐾</div>';
+				: '<div class="pm-card-noimg" aria-hidden="true">🐾</div>';
 
 			var badgeHtml = badge ? '<div class="pm-badge">' + badge + '</div>' : '';
 			var breedHtml = ( ! cfg.hideBreed && breed ) ? '<div class="pm-breed">' + breed + '</div>' : '';
 			var locHtml = '<div class="pm-loc">' + ( loc || escapeHtml( cfg.orgName || '' ) ) + '</div>';
 
+			var ctas;
+			if ( cfg.adoptionFormUrl ) {
+				ctas =
+					'<a class="pm-cta pm-cta-adopt" href="' + escapeHtml( adoptionLink( cat ) ) + '" target="_blank" rel="noopener noreferrer">💌 Apply to adopt</a>' +
+					'<a class="pm-cta-link" href="' + url + '" target="_blank" rel="noopener noreferrer">View details →</a>';
+			} else {
+				ctas =
+					'<a class="pm-cta" href="' + url + '" target="_blank" rel="noopener noreferrer">Boop to view <span class="pm-cta-arrow" aria-hidden="true">→</span> <span aria-hidden="true">✨</span></a>';
+			}
+
 			return (
-				'<a class="pm-card" href="' + url + '" target="_blank" rel="noopener noreferrer">' +
+				'<div class="pm-card">' +
+				'<a class="pm-media-link" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="' + name + '">' +
 				'<div class="pm-card-media">' + media + badgeHtml + '</div>' +
+				'</a>' +
 				'<div class="pm-card-body">' +
 				'<div class="pm-card-head">' +
 				'<div>' +
-				'<div class="pm-name">' + name + '</div>' +
+				'<a class="pm-name-link" href="' + url + '" target="_blank" rel="noopener noreferrer"><span class="pm-name">' + name + '</span></a>' +
 				breedHtml +
 				locHtml +
 				'</div>' +
 				'<div class="pm-paw" aria-hidden="true">🐾</div>' +
 				'</div>' +
-				'<span class="pm-cta">Boop to view <span class="pm-cta-arrow" aria-hidden="true">→</span> <span aria-hidden="true">✨</span></span>' +
+				'<div class="pm-cta-row">' + ctas + '</div>' +
 				'</div>' +
-				'</a>'
+				'</div>'
 			);
 		}
 
