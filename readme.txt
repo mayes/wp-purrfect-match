@@ -116,6 +116,7 @@ subject to Petfinder's terms and policies:
 
 = 1.6.1 =
 * New: built-in Help & Documentation in the admin — a collapsible guide on the Settings screen plus native WordPress Help tabs (quick start, shortcode & attributes, settings reference, Petfinder Explorer, troubleshooting).
+* Change: the shared cache ships enabled with a longer 120-minute (2-hour) default lifetime — faster loads and fewer calls to Petfinder out of the box.
 
 = 1.6.0 =
 * New: card display toggles — show or hide the location, pet story, breed, and the age • size badge.

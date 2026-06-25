@@ -74,9 +74,9 @@ class Purrfect_Match_Settings {
 			'adoptapet_url'       => '',
 			'petfinder_member_url' => '',
 
-			// Performance.
+			// Performance. The shared cache ships enabled with a 2-hour lifetime.
 			'server_cache'        => 1,
-			'cache_minutes'       => 15,
+			'cache_minutes'       => 120,
 
 			// Endpoints (advanced — rarely changed).
 			'api_base'      => 'https://psl.petfinder.com/graphql',
