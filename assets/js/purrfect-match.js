@@ -92,19 +92,20 @@
 			.replace( /'/g, '&#39;' );
 	}
 
-	// Defense-in-depth for URL sinks: allow only http(s) / relative / anchor
-	// URLs, so a hostile scheme (javascript:, data:, vbscript:, …) can never
-	// reach an href/src even if some future change feeds it an unvalidated URL.
+	// Defense-in-depth for URL sinks: allow only http(s) / relative / anchor URLs
+	// so a hostile scheme can never reach an href/src. Control chars and spaces
+	// — which browsers strip before scheme parsing, enabling "java\tscript:"
+	// style bypasses — are removed first.
 	function safeUrl( u ) {
-		var s = String( u == null ? '' : u ).trim();
+		var s = String( u == null ? '' : u ).replace( /[\x00-\x20]+/g, '' );
 		if ( ! s ) {
 			return '';
 		}
-		if ( /^https?:\/\//i.test( s ) || /^[/#?]/.test( s ) || /^\.\.?\//.test( s ) ) {
+		if ( /^https?:\/\//i.test( s ) ) {
 			return s;
 		}
-		// Anything else declaring a scheme is rejected.
-		if ( /^[a-z][a-z0-9+.-]*:/i.test( s ) ) {
+		// Reject protocol-relative ("//host") and anything else declaring a scheme.
+		if ( /^\/\//.test( s ) || /^[a-z][a-z0-9+.-]*:/i.test( s ) ) {
 			return '';
 		}
 		return s;
@@ -358,19 +359,18 @@
 		}
 	}
 
-	// Optional `stamp` lets a caller preserve an upstream age (e.g. the shared
-	// cache's write time) instead of re-stamping the copy as brand new.
-	function writeCache( cfg, cats, stamp ) {
+	// The per-visitor copy is always stamped with the local clock so it lives a
+	// full CACHE_TTL_MS for this browser (the shared/server copy has its own,
+	// independent, server-side lifetime).
+	function writeCache( cfg, cats ) {
 		try {
-			var t = typeof stamp === 'number' && stamp > 0 ? stamp : Date.now();
-			window.localStorage.setItem( cacheKey( cfg ), JSON.stringify( { t: t, cats: cats } ) );
+			window.localStorage.setItem( cacheKey( cfg ), JSON.stringify( { t: Date.now(), cats: cats } ) );
 		} catch ( e ) {
 			/* storage unavailable / full / blocked — caching is best-effort. */
 		}
 	}
 
 	// Shared (server) cache: visitors read; only capable, logged-in users write.
-	// Returns { t, cats } so the caller can honor the server-side write time.
 	function serverGet( cfg ) {
 		var url = cfg.restUrl + ( cfg.restUrl.indexOf( '?' ) === -1 ? '?' : '&' ) + 'key=' + encodeURIComponent( cacheKey( cfg ) );
 		return fetch( url, { headers: { Accept: 'application/json' } } )
@@ -378,10 +378,7 @@
 				return r.ok ? r.json() : null;
 			} )
 			.then( function ( j ) {
-				if ( ! j || ! Array.isArray( j.cats ) ) {
-					return null;
-				}
-				return { t: typeof j.t === 'number' ? j.t : 0, cats: j.cats };
+				return ( j && Array.isArray( j.cats ) ) ? j.cats : null;
 			} )
 			.catch( function () {
 				return null;
@@ -934,10 +931,10 @@
 			// 2. Shared server cache (one fast read, no Petfinder call).
 			if ( cfg.serverCache && cfg.restUrl ) {
 				showSkeletons();
-				serverGet( cfg ).then( function ( server ) {
-					if ( server && server.cats && server.cats.length ) {
-						writeCache( cfg, server.cats, server.t );
-						useCats( server.cats );
+				serverGet( cfg ).then( function ( serverCats ) {
+					if ( serverCats && serverCats.length ) {
+						writeCache( cfg, serverCats );
+						useCats( serverCats );
 					} else {
 						liveFetch();
 					}

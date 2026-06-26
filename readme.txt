@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.6.1
+Stable tag: 1.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,13 @@ subject to Petfinder's terms and policies:
 
 == Changelog ==
 
+= 1.6.2 =
+* Fix: the per-visitor cache is no longer stamped with the shared cache's older write time, which could make it expire instantly and re-request on every page view — it now uses local time for a full client-side lifetime.
+* Fix: hardened the URL scheme allow-list against control-character scheme bypasses (e.g. an embedded tab in javascript:) and protocol-relative URLs.
+* Fix: the pet-bio length cap now measures characters consistently (it previously mixed bytes and characters).
+* Fix: the small-phone hero-photo height now actually applies (CSS specificity).
+* Minor: cache-lifetime fallback aligned to the 120-minute default.
+
 = 1.6.1 =
 * New: built-in Help & Documentation in the admin — a collapsible guide on the Settings screen plus native WordPress Help tabs (quick start, shortcode & attributes, settings reference, Petfinder Explorer, troubleshooting).
 * Change: the shared cache ships enabled with a longer 120-minute (2-hour) default lifetime — faster loads and fewer calls to Petfinder out of the box.
@@ -155,6 +162,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.6.2 =
+Fixes a per-visitor cache regression (re-requesting every page view), hardens URL sanitization, and corrects the small-phone photo height.
 
 = 1.6.1 =
 Adds built-in Help & Documentation (Settings panel + WordPress Help tabs).
