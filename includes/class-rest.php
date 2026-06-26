@@ -137,7 +137,7 @@ class Purrfect_Match_REST {
 		}
 
 		$options = Purrfect_Match_Settings::get_options();
-		$minutes = isset( $options['cache_minutes'] ) ? max( 1, (int) $options['cache_minutes'] ) : 15;
+		$minutes = isset( $options['cache_minutes'] ) ? max( 1, (int) $options['cache_minutes'] ) : 120;
 
 		set_transient(
 			$this->transient_name( $key ),
@@ -167,8 +167,9 @@ class Purrfect_Match_REST {
 			}
 			// Bios are free text: keep line breaks but cap the length so a long
 			// description (x up to 1000 pets) can't bloat a single transient.
-			$bio = isset( $cat['bio'] ) ? sanitize_textarea_field( (string) $cat['bio'] ) : '';
-			if ( strlen( $bio ) > 600 ) {
+			$bio     = isset( $cat['bio'] ) ? sanitize_textarea_field( (string) $cat['bio'] ) : '';
+			$bio_len = function_exists( 'mb_strlen' ) ? mb_strlen( $bio ) : strlen( $bio );
+			if ( $bio_len > 600 ) {
 				$bio = function_exists( 'mb_substr' ) ? mb_substr( $bio, 0, 600 ) : substr( $bio, 0, 600 );
 			}
 			$out[] = array(

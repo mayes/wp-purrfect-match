@@ -389,7 +389,7 @@
 	.pm-banner { padding: 1.15rem; }
 	.pm-body { padding: 1.15rem; }
 	.pm-title { font-size: 1.35rem; }
-	.pm-card-media { height: 14rem; }
+	.pm-wrap .pm-card-media { height: 14rem; }
 }
 
 /* ---------- Pet card ---------- */
