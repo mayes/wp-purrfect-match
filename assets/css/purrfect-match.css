@@ -394,29 +394,14 @@
 
 /* ---------- Pet card ---------- */
 
-/* Card = 3D context + entrance/hover motion. The visible surface lives on the
-   front/back faces so a card with a story can flip to reveal it. */
+/*
+ * The card surface lives on the wrapper (the proven, theme-robust layout).
+ * The pet "story" is an opaque overlay that fades in OVER the card — no 3D
+ * transforms, so nothing can bleed through and it doesn't depend on the theme
+ * preserving perspective / backface-visibility / transform-style.
+ */
 .pm-card {
-	display: flex;
-	flex-direction: column;
-	perspective: 1200px;
-	text-decoration: none;
-	color: inherit;
-	transition: transform .2s ease;
-}
-
-.pm-card-inner {
 	position: relative;
-	flex: 1 1 auto;
-	display: flex;
-	transform-style: preserve-3d;
-	transition: transform .6s cubic-bezier(.2, .7, .2, 1);
-}
-
-.pm-card.is-flipped .pm-card-inner { transform: rotateY(180deg); }
-
-.pm-card-front,
-.pm-card-back {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
@@ -424,24 +409,54 @@
 	background: #fff;
 	border: 1px solid var(--pm-ring);
 	box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
-	-webkit-backface-visibility: hidden;
-	backface-visibility: hidden;
+	text-decoration: none;
+	color: inherit;
+	transition: transform .2s ease, box-shadow .2s ease;
 }
 
-.pm-card-front {
+.pm-card-inner {
+	display: flex;
+	flex-direction: column;
 	flex: 1 1 auto;
-	width: 100%;
 	min-width: 0;
 }
 
+.pm-card-front {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+}
+
+/* Story overlay ("back") — hidden until the card is flipped, opaque when shown. */
 .pm-card-back {
 	position: absolute;
 	inset: 0;
-	transform: rotateY(180deg);
+	z-index: 3;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
 	padding: 1.1rem;
+	background: #fff;
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(8px);
+	transition: opacity .25s ease, transform .25s ease, visibility .25s ease;
+	pointer-events: none;
 }
 
-.pm-card:focus-within .pm-card-front {
+.pm-card.is-flipped .pm-card-back {
+	opacity: 1;
+	visibility: visible;
+	transform: none;
+	pointer-events: auto;
+}
+
+/* While the story shows, take the front out of the visual + tab order. */
+.pm-card.is-flipped .pm-card-front {
+	visibility: hidden;
+}
+
+.pm-card:focus-within {
 	box-shadow: 0 0 0 2px rgba(233, 51, 150, .35);
 	box-shadow: 0 0 0 2px color-mix(in srgb, var(--pm-brand) 45%, transparent);
 }
@@ -883,8 +898,7 @@
 .pm-grid .pm-card:nth-child(8) { animation-delay: .30s; }
 
 /* Richer hover */
-.pm-card:hover { transform: translateY(-4px); }
-.pm-card:hover .pm-card-front { box-shadow: 0 22px 40px -22px rgba(0, 0, 0, .45); }
+.pm-card:hover { transform: translateY(-4px); box-shadow: 0 22px 40px -22px rgba(0, 0, 0, .45); }
 .pm-card:hover .pm-card-img { transform: scale(1.06); }
 .pm-card:hover .pm-paw { animation: pm-wiggle .6s ease both; }
 .pm-card:hover .pm-cta {
