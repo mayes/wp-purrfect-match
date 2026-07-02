@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.6.3-e93396" alt="Version 1.6.3">
+  <img src="https://img.shields.io/badge/version-1.6.4-e93396" alt="Version 1.6.4">
   <img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue" alt="License GPL-2.0-or-later">
   <img src="https://img.shields.io/badge/WordPress-5.6%2B-21759b" alt="WordPress 5.6+">
   <img src="https://img.shields.io/badge/PHP-7.0%2B-777bb4" alt="PHP 7.0+">
@@ -28,7 +28,7 @@
 | --- | --- |
 | 🐾 **Live Petfinder listings** | Real adoptable pets with photos, names, breed, size, age, and location. |
 | 🔎 **Instant filtering** | Filter by breed, size, and age in the browser, with removable chips. |
-| 📖 **Pet stories (flip card)** | Flip a card to read the pet's description; auto-detected with safe fallback, text stays in the DOM for SEO. |
+| 📖 **Pet stories (flip card)** | Flip a card to read the pet's description — an accessible disclosure with keyboard focus handling and Escape to close; auto-detected with safe fallback. |
 | 🎚️ **Card display toggles** | Show/hide location, story, breed, and the age/size badge per site. |
 | 💌 **Apply to adopt** | Optional button linking each pet to your application form, prefilled with its name & ID. |
 | 🎨 **Fully brandable** | Your accent color, your copy, 2–4 column layouts. |

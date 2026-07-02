@@ -574,8 +574,9 @@
 				'</div>' +
 				'</div>';
 
-			// The story lives on the back face. It stays in the DOM regardless of
-			// flip state, so screen readers and crawlers can always read it.
+			// The story panel is a disclosure: hidden (visibility) until opened
+			// via the aria-expanded "Read story" button, like a native details
+			// element. Crawlers get the pet data via the JSON-LD ItemList.
 			var back = '';
 			if ( hasStory ) {
 				back =
@@ -989,6 +990,33 @@
 			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
 			if ( opener ) {
 				opener.setAttribute( 'aria-expanded', flipped ? 'true' : 'false' );
+			}
+			// The activated button ends up visibility:hidden (front hides while
+			// the story shows, panel hides on close), which would drop focus to
+			// <body>. Hand focus to the counterpart control instead so keyboard
+			// and screen-reader users keep their place.
+			var target = flipped ? cardEl.querySelector( '.pm-flip-close' ) : opener;
+			if ( target && target.focus ) {
+				target.focus();
+			}
+		} );
+
+		// Escape closes an open story and returns focus to its opener.
+		grid.addEventListener( 'keydown', function ( e ) {
+			if ( e.key !== 'Escape' && e.key !== 'Esc' ) {
+				return;
+			}
+			var cardEl = e.target && e.target.closest ? e.target.closest( '.pm-card.is-flipped' ) : null;
+			if ( ! cardEl ) {
+				return;
+			}
+			cardEl.classList.remove( 'is-flipped' );
+			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
+			if ( opener ) {
+				opener.setAttribute( 'aria-expanded', 'false' );
+				if ( opener.focus ) {
+					opener.focus();
+				}
 			}
 		} );
 

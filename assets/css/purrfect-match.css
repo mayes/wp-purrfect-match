@@ -427,7 +427,12 @@
 	flex: 1 1 auto;
 }
 
-/* Story overlay ("back") — hidden until the card is flipped, opaque when shown. */
+/*
+ * Story overlay ("back") — hidden until the card is flipped, opaque when
+ * shown. Hit-testing and focusability ride on `visibility` (a hidden panel
+ * can't be clicked or tabbed into; during the close fade it stays visible and
+ * so keeps catching clicks) — no pointer-events juggling needed.
+ */
 .pm-card-back {
 	position: absolute;
 	inset: 0;
@@ -441,22 +446,26 @@
 	visibility: hidden;
 	transform: translateY(8px);
 	transition: opacity .25s ease, transform .25s ease, visibility .25s ease;
-	pointer-events: none;
 }
 
 .pm-card.is-flipped .pm-card-back {
 	opacity: 1;
 	visibility: visible;
 	transform: none;
-	pointer-events: auto;
 }
 
-/* While the story shows, take the front out of the visual + tab order. */
+/* While the story shows, take the front out of the visual + tab order — but
+   only once the story has faded in over it, so opening reads as a crossfade
+   instead of a white flash. Closing restores the front instantly (the base
+   state carries no transition delay). */
 .pm-card.is-flipped .pm-card-front {
 	visibility: hidden;
+	transition: visibility 0s .25s;
 }
 
-.pm-card:focus-within {
+/* .pm-wrap prefix out-specifies the later .pm-card:hover box-shadow, so the
+   keyboard focus ring survives having the pointer parked on the card. */
+.pm-wrap .pm-card:focus-within {
 	box-shadow: 0 0 0 2px rgba(233, 51, 150, .35);
 	box-shadow: 0 0 0 2px color-mix(in srgb, var(--pm-brand) 45%, transparent);
 }
@@ -803,9 +812,11 @@
 
 /* ---------- Visual flair / animations ---------- */
 
+/* `to` deliberately omits transform: with fill-mode both, an explicit
+   `transform: none` here would keep overriding the :hover lift forever. */
 @keyframes pm-rise {
 	from { opacity: 0; transform: translateY(14px) scale(.98); }
-	to   { opacity: 1; transform: none; }
+	to   { opacity: 1; }
 }
 
 @keyframes pm-float-1 {
