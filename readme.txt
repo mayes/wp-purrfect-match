@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.6.3
+Stable tag: 1.6.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,13 @@ subject to Petfinder's terms and policies:
 
 == Changelog ==
 
+= 1.6.4 =
+* Fix: opening a story now crossfades (the card no longer flashes white while the panel fades in).
+* Fix: keyboard/screen-reader focus is kept in place — opening a story focuses its Close button, closing returns focus to “Read story”, and Escape closes the panel.
+* Fix: during the story’s closing fade, clicks no longer pass through the still-visible panel to the links underneath.
+* Fix: the card hover “lift” works again (the entrance animation was permanently overriding it).
+* Fix: the keyboard focus ring is no longer replaced by the hover shadow when the pointer rests on a focused card.
+
 = 1.6.3 =
 * Fix: reworked the pet-story “flip” to a reliable opaque panel that fades in over the card (instead of a CSS 3D flip). Fixes themes where the front could show through, card height jumps, cramped/clipped long stories, and spacing issues. Theme-independent and respects reduced motion.
 
@@ -165,6 +172,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.6.4 =
+Polish for the story panel: crossfade open, proper keyboard focus + Escape, no click-through during the close fade, and the hover lift restored.
 
 = 1.6.3 =
 Makes the pet-story reveal reliable across themes (no more front showing through, height jumps, or clipped stories).
