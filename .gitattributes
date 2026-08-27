@@ -1,14 +1,18 @@
 # Files that must NOT ship in the distributed plugin ZIP.
 # `git archive` (and bin/build.sh) honor these export-ignore rules, so only
 # the files WordPress actually needs end up in users' installs.
+*.sh               text eol=lf
+
 /.git              export-ignore
 /.github           export-ignore
 /.gitattributes    export-ignore
 /.gitignore        export-ignore
 /.distignore       export-ignore
 /.claude           export-ignore
+/GATES.md          export-ignore
 /bin               export-ignore
 /tools             export-ignore
 /examples          export-ignore
+/preview           export-ignore
 /README.md         export-ignore
 /CONTRIBUTING.md   export-ignore

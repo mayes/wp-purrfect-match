@@ -5,9 +5,11 @@
 /.gitattributes
 /.distignore
 /.claude
+/GATES.md
 /bin
 /tools
 /examples
+/preview
 /dist
 /README.md
 /CONTRIBUTING.md

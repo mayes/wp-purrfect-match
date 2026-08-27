@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.6.4-e93396" alt="Version 1.6.4">
+  <img src="https://img.shields.io/badge/version-1.7.0-e93396" alt="Version 1.7.0">
   <img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue" alt="License GPL-2.0-or-later">
   <img src="https://img.shields.io/badge/WordPress-5.6%2B-21759b" alt="WordPress 5.6+">
   <img src="https://img.shields.io/badge/PHP-7.0%2B-777bb4" alt="PHP 7.0+">
@@ -13,7 +13,7 @@
 
 <p align="center">
   <b>A WordPress plugin that shows your shelter's adoptable Petfinder pets in a beautiful, filterable grid.</b><br>
-  No API key. No cron. No stored data — listings load live in the visitor's browser.
+  No API key. No cron. Listings load on demand, with optional shared and local caching.
 </p>
 
 <p align="center">
@@ -33,7 +33,7 @@
 | 💌 **Apply to adopt** | Optional button linking each pet to your application form, prefilled with its name & ID. |
 | 🎨 **Fully brandable** | Your accent color, your copy, 2–4 column layouts. |
 | 📱 **Responsive** | Mobile-first grid that looks great from phone to desktop. |
-| ⚡ **Fast & private** | Optional shared cache; no visitor data collected; no API key to manage. |
+| ⚡ **Fast & respectful** | Optional shared cache, no plugin analytics, and no API key to manage. |
 | 🔎 **SEO & AI ready** | Emits Schema.org JSON-LD (AnimalShelter + pet ItemList) for search engines and AI crawlers. |
 | ♿ **Accessible** | Labelled controls, `aria-live` updates, and reduced-motion support. |
 
@@ -65,7 +65,8 @@ With per-instance overrides:
 | `organization` | *(none — required)*          | Petfinder display ID(s) or UUID(s), comma-separated.    |
 | `type`         | `cat`                        | `cat`, `dog`, `rabbit`, `small-furry`, `bird`, `horse`, `barnyard`, `scales-fins-other`. |
 | `status`       | `adoptable`                  | `adoptable`, `adopted`, `found`.                        |
-| `limit`        | `24`                         | Max pets to load (`0` = all; up to 1000).               |
+| `limit`        | `0`                          | Max pets to load (`0` = all; up to 1000).               |
+| `per_page`     | `24`                         | Pets revealed in each visible batch (`0` = show all).   |
 | `columns`      | `3`                          | Desktop columns (2–4).                                  |
 | `hide_breed`   | `false`                      | Hide the breed name and the breed filter.              |
 | `adoption_form_url` | *(empty)*               | Link each pet to your application form ("Apply to adopt"). |
@@ -87,8 +88,8 @@ changing.
 Purrfect Match reproduces the data layer of Petfinder's own public *pet-scroller*
 widget, entirely client-side:
 
-1. Your Petfinder **organization display ID** (e.g. `FL1629`) is resolved to a
-   UUID via the `GetOrganization` GraphQL query.
+1. A Petfinder **organization display ID** (e.g. `FL1629`) is resolved to a
+   UUID via the `GetOrganization` GraphQL query; configured UUIDs are used directly.
 2. The `SearchAnimal` query returns that organization's animals (name, photo,
    breed, size, age, location, optional description, and a detail-page link).
 3. Results render into the grid, and the breed / size / age filters run
@@ -122,7 +123,7 @@ includes/class-settings.php        Options, defaults, and the Settings screen.
 includes/class-purrfect-match.php  Assets, shortcode, and per-instance config.
 includes/class-rest.php            Optional shared-cache REST endpoint.
 templates/widget.php               Front-end markup (one instance per shortcode).
-assets/css/purrfect-match.css      Scoped styles (brand color + columns via CSS vars).
+assets/css/purrfect-match.css      Namespaced widget styles (brand + columns via CSS vars).
 assets/js/purrfect-match.js        Client-side GraphQL data layer + filter UI.
 uninstall.php                      Removes saved options and cache on delete.
 readme.txt                         WordPress.org-style readme.
@@ -130,10 +131,12 @@ readme.txt                         WordPress.org-style readme.
 
 ## 🔒 Privacy & external services
 
-No visitor data is collected or stored. To show your pets, listing data and
-photos are loaded **in the visitor's browser** from Petfinder's public widget
-data source (`psl.petfinder.com/graphql`) and photo CDN. See the
-[readme](readme.txt) "External services" section for the full disclosure.
+Purrfect Match does not add form, account, or tracking data to Petfinder
+requests and includes no plugin analytics. To show pets, listing data and
+photos may load **in the visitor's browser** from Petfinder's public widget
+data source (`psl.petfinder.com/graphql`) and photo CDN. Those services receive
+ordinary connection metadata such as IP address, user agent, and request
+headers. See the [readme](readme.txt) "External services" section for details.
 
 > [!NOTE]
 > Purrfect Match is **not affiliated with, endorsed by, or sponsored by

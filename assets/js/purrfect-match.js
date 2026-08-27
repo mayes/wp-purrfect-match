@@ -54,14 +54,13 @@
 	};
 
 	var FILTER_ORDER = [ 'breed', 'size', 'age' ];
-	var FILTER_LABEL = { breed: 'Breed', size: 'Size', age: 'Age' };
 
 	// Per-request page size when fetching the full set (kept small for safety).
 	var PAGE_SIZE = 24;
 
 	// Short-lived localStorage cache: be a good citizen of the shared Petfinder
 	// endpoint by not re-fetching identical listings on every page view.
-	var CACHE_PREFIX = 'pmcache:v1:';
+	var CACHE_PREFIX = 'pmcache:v2:';
 	var CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes.
 
 	// Module-level cache so multiple widgets / repeat loads share org lookups.
@@ -90,6 +89,22 @@
 			.replace( />/g, '&gt;' )
 			.replace( /"/g, '&quot;' )
 			.replace( /'/g, '&#39;' );
+	}
+
+	// Small, consistent line icons for markup rendered in the browser. Paths are
+	// static plugin code; labels live on the surrounding controls.
+	function icon( name ) {
+		var paths = {
+			paw: '<ellipse cx="12" cy="15.5" rx="4.6" ry="3.8"></ellipse><circle cx="5.5" cy="10" r="2"></circle><circle cx="9.5" cy="6.5" r="2"></circle><circle cx="14.5" cy="6.5" r="2"></circle><circle cx="18.5" cy="10" r="2"></circle>',
+			book: '<path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v16H7.5A3.5 3.5 0 0 0 4 21.5Z"></path><path d="M20 5.5A3.5 3.5 0 0 0 16.5 2H13v16h3.5a3.5 3.5 0 0 1 3.5 3.5Z"></path>',
+			arrow: '<path d="M5 12h14M13 6l6 6-6 6"></path>',
+			back: '<path d="M19 12H5M11 6l-6 6 6 6"></path>',
+			close: '<path d="m6 6 12 12M18 6 6 18"></path>',
+			refresh: '<path d="M20 7v5h-5M4 17v-5h5"></path><path d="M6.1 9a7 7 0 0 1 11.7-2.6L20 9M4 15l2.2 2.6A7 7 0 0 0 17.9 15"></path>',
+			search: '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>',
+			mail: '<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path>'
+		};
+		return '<svg class="pm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + ( paths[ name ] || paths.paw ) + '</svg>';
 	}
 
 	// Defense-in-depth for URL sinks: allow only http(s) / relative / anchor URLs
@@ -164,9 +179,14 @@
 		}
 		var p = gql( apiBase, ORG_QUERY, { organizationId: displayId, idType: 'display_id' } )
 			.then( function ( data ) {
-				return ( data && data.organization && data.organization.organizationId ) || null;
+				var uuid = ( data && data.organization && data.organization.organizationId ) || null;
+				if ( ! uuid ) {
+					delete orgCache[ key ];
+				}
+				return uuid;
 			} )
 			.catch( function () {
+				delete orgCache[ key ];
 				return null;
 			} );
 		orgCache[ key ] = p;
@@ -312,8 +332,12 @@
 		}
 		var addr = ( a._contact && a._contact.address ) || {};
 		var base = cfg.petfinderUrl || '';
+		var photoBase = cfg.s3Url || '';
 		if ( base && base.charAt( base.length - 1 ) !== '/' ) {
 			base += '/';
+		}
+		if ( photoBase && photoBase.charAt( photoBase.length - 1 ) !== '/' ) {
+			photoBase += '/';
 		}
 		// base ends with "/"; drop any leading "/" on the path to avoid "//".
 		var path = ( a.publicUrl && a.publicUrl.url ) || '';
@@ -330,14 +354,23 @@
 			city: addr.city || '',
 			state: addr.state || '',
 			bio: a.description ? decodeEntities( String( a.description ) ).replace( /\s+/g, ' ' ).trim() : '',
-			photo: a.primaryPhotoId ? ( cfg.s3Url + a.primaryPhotoId ) : '',
+			photo: a.primaryPhotoId ? ( photoBase + String( a.primaryPhotoId ).replace( /^\/+/, '' ) ) : '',
 			url: path ? ( base + path + '/details' ) : ( cfg.petfinderUrl || '#' )
 		};
 	}
 
 	function cacheKey( cfg ) {
 		var orgs = Array.isArray( cfg.organization ) ? cfg.organization.slice().sort().join( ',' ) : '';
-		return CACHE_PREFIX + [ cfg.apiBase, orgs, cfg.type, cfg.status, cfg.limit ].join( '|' );
+		return CACHE_PREFIX + [
+			cfg.apiBase,
+			cfg.s3Url,
+			cfg.petfinderUrl,
+			orgs,
+			cfg.type,
+			cfg.status,
+			cfg.limit,
+			cfg.showBios ? 'rich' : 'basic'
+		].join( '|' );
 	}
 
 	function readCache( cfg ) {
@@ -414,9 +447,26 @@
 			cfg = {};
 		}
 
+		var strings = cfg.strings || {};
+		function message( key, fallback, values ) {
+			var output = String( strings[ key ] || fallback );
+			Object.keys( values || {} ).forEach( function ( token ) {
+				output = output.split( '{' + token + '}' ).join( String( values[ token ] ) );
+			} );
+			return output;
+		}
+
+		var filterLabels = {
+			breed: message( 'breed', 'Breed' ),
+			size: message( 'size', 'Size' ),
+			age: message( 'age', 'Age' )
+		};
+
 		var grid = root.querySelector( '[data-pm-grid]' );
 		var chipsEl = root.querySelector( '[data-pm-chips]' );
 		var countEl = root.querySelector( '[data-pm-count]' );
+		var statusEl = root.querySelector( '[data-pm-status]' );
+		var clearButtons = root.querySelectorAll( '[data-pm-action="clear"]' );
 		if ( ! grid ) {
 			return;
 		}
@@ -431,6 +481,7 @@
 		} );
 
 		var cats = [];
+		var loading = false;
 		var state = {};
 		activeKeys.forEach( function ( k ) {
 			state[ k ] = 'all';
@@ -501,7 +552,7 @@
 
 		function skeletonCard() {
 			return (
-				'<div class="pm-skel" aria-hidden="true">' +
+				'<div class="pm-skel" role="listitem" aria-hidden="true">' +
 				'<div class="pm-skel-media"></div>' +
 				'<div class="pm-skel-body">' +
 				'<div class="pm-skel-line lg"></div>' +
@@ -524,77 +575,69 @@
 			return base + sep + q;
 		}
 
-		function card( cat ) {
-			var name = escapeHtml( cat.name );
+		function card( cat, index ) {
+			var rawName = cat.name || '';
+			var name = escapeHtml( rawName );
 			var breed = escapeHtml( cat.breed );
 			var loc = escapeHtml( [ cat.city, cat.state ].filter( Boolean ).join( ', ' ) );
 			var photo = escapeHtml( safeUrl( cat.photo ) );
 			var url = escapeHtml( safeUrl( cat.url ) );
-			var badge = escapeHtml( [ cat.age, cat.size ].filter( Boolean ).join( ' • ' ) );
+			var badge = escapeHtml( [ cat.age, cat.size ].filter( Boolean ).join( ' · ' ) );
 			var hasStory = !! ( cfg.showBios && cat.bio );
+			var cardId = root.id + '-pet-' + index;
+			var nameId = cardId + '-name';
+			var storyId = cardId + '-story';
+			var storyNameId = cardId + '-story-name';
+			var newTab = '<span class="pm-sr-only"> ' + escapeHtml( message( 'newTab', '(opens in a new tab)' ) ) + '</span>';
 
 			var media = photo
-				? '<img class="pm-card-img" src="' + photo + '" alt="' + name + '" loading="lazy" />'
-				: '<div class="pm-card-noimg" aria-hidden="true">🐾</div>';
+				? '<img class="pm-card-img" src="' + photo + '" alt="' + escapeHtml( message( 'photoOf', 'Photo of {name}', { name: rawName } ) ) + '" loading="lazy" decoding="async" />'
+				: '<div class="pm-card-noimg" aria-hidden="true">' + icon( 'paw' ) + '</div>';
 
-			// Card-field toggles (default on when the flag is absent/undefined).
 			var badgeHtml = ( cfg.showBadge !== false && badge ) ? '<div class="pm-badge">' + badge + '</div>' : '';
 			var breedHtml = ( ! cfg.hideBreed && breed ) ? '<div class="pm-breed">' + breed + '</div>' : '';
-			var locHtml = ( cfg.showLocation !== false ) ? '<div class="pm-loc">' + ( loc || escapeHtml( cfg.orgName || '' ) ) + '</div>' : '';
+			var locHtml = ( cfg.showLocation !== false && ( loc || cfg.orgName ) )
+				? '<div class="pm-loc">' + ( loc || escapeHtml( cfg.orgName || '' ) ) + '</div>'
+				: '';
 			var storyBtn = hasStory
-				? '<button type="button" class="pm-flip-btn" data-pm-flip="open" aria-expanded="false"><span aria-hidden="true">📖</span> Read story</button>'
+				? '<button type="button" class="pm-flip-btn" data-pm-flip="open" aria-expanded="false" aria-controls="' + storyId + '" aria-label="' + escapeHtml( message( 'readStory', 'Read {name}\'s story', { name: rawName } ) ) + '">' + icon( 'book' ) + '<span>' + escapeHtml( message( 'readStoryShort', 'Read story' ) ) + '</span></button>'
 				: '';
 
 			var ctas;
 			if ( cfg.adoptionFormUrl ) {
 				ctas =
-					'<a class="pm-cta pm-cta-adopt" href="' + escapeHtml( safeUrl( adoptionLink( cat ) ) ) + '" target="_blank" rel="noopener noreferrer">💌 Apply to adopt</a>' +
-					'<a class="pm-cta-view" href="' + url + '" target="_blank" rel="noopener noreferrer">View details</a>';
+					'<a class="pm-cta pm-cta-adopt" href="' + escapeHtml( safeUrl( adoptionLink( cat ) ) ) + '" target="_blank" rel="noopener noreferrer">' + icon( 'mail' ) + '<span>' + escapeHtml( message( 'apply', 'Apply to adopt' ) ) + '</span>' + newTab + '</a>' +
+					'<a class="pm-cta-view" href="' + url + '" target="_blank" rel="noopener noreferrer"><span>' + escapeHtml( message( 'viewProfile', 'View profile' ) ) + '</span>' + newTab + '</a>';
 			} else {
 				ctas =
-					'<a class="pm-cta" href="' + url + '" target="_blank" rel="noopener noreferrer">Boop to view <span class="pm-cta-arrow" aria-hidden="true">→</span> <span aria-hidden="true">✨</span></a>';
+					'<a class="pm-cta" href="' + url + '" target="_blank" rel="noopener noreferrer"><span>' + escapeHtml( message( 'meetPet', 'Meet {name}', { name: rawName } ) ) + '</span>' + icon( 'arrow' ) + newTab + '</a>';
 			}
 
 			var front =
 				'<div class="pm-card-front">' +
-				'<a class="pm-media-link" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="' + name + '">' +
-				'<div class="pm-card-media">' + media + badgeHtml + '</div>' +
-				'</a>' +
+				'<a class="pm-media-link" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="' + escapeHtml( message( 'viewProfile', 'View profile' ) + ': ' + rawName ) + '">' +
+				'<div class="pm-card-media">' + media + badgeHtml + '</div></a>' +
 				'<div class="pm-card-body">' +
-				'<div class="pm-card-head">' +
-				'<div>' +
-				'<a class="pm-name-link" href="' + url + '" target="_blank" rel="noopener noreferrer"><span class="pm-name">' + name + '</span></a>' +
-				breedHtml +
-				locHtml +
-				'</div>' +
-				'<div class="pm-paw" aria-hidden="true">🐾</div>' +
-				'</div>' +
+				'<div class="pm-card-head"><div>' +
+				'<h3 class="pm-name" id="' + nameId + '"><a class="pm-name-link" href="' + url + '" target="_blank" rel="noopener noreferrer">' + name + '</a></h3>' +
+				breedHtml + locHtml +
+				'</div><div class="pm-card-mark pm-paw" aria-hidden="true">' + icon( 'paw' ) + '</div></div>' +
 				storyBtn +
 				'<div class="pm-cta-row">' + ctas + '</div>' +
-				'</div>' +
-				'</div>';
+				'</div></div>';
 
-			// The story panel is a disclosure: hidden (visibility) until opened
-			// via the aria-expanded "Read story" button, like a native details
-			// element. Crawlers get the pet data via the JSON-LD ItemList.
 			var back = '';
 			if ( hasStory ) {
 				back =
-					'<div class="pm-card-back">' +
-					'<div class="pm-back-head">' +
-					'<span class="pm-back-name">' + name + '</span>' +
-					'<button type="button" class="pm-flip-btn pm-flip-close" data-pm-flip="close" aria-label="Hide story">✕</button>' +
-					'</div>' +
-					'<div class="pm-back-story">' + escapeHtml( cat.bio ) + '</div>' +
-					'<button type="button" class="pm-flip-btn pm-flip-back" data-pm-flip="close"><span aria-hidden="true">←</span> Back</button>' +
-					'</div>';
+					'<section class="pm-card-back" id="' + storyId + '" data-pm-story role="region" aria-labelledby="' + storyNameId + '" aria-hidden="true">' +
+					'<div class="pm-back-head"><span class="pm-back-name" id="' + storyNameId + '">' + name + '</span>' +
+					'<button type="button" class="pm-flip-btn pm-flip-close" data-pm-flip="close" aria-label="' + escapeHtml( message( 'hideStory', 'Hide {name}\'s story', { name: rawName } ) ) + '">' + icon( 'close' ) + '</button></div>' +
+					'<div class="pm-back-story" tabindex="0">' + escapeHtml( cat.bio ) + '</div>' +
+					'<button type="button" class="pm-flip-btn pm-flip-back" data-pm-flip="close">' + icon( 'back' ) + escapeHtml( message( 'back', 'Back' ) ) + '</button>' +
+					'</section>';
 			}
 
-			return (
-				'<div class="pm-card' + ( hasStory ? ' pm-card--flip' : '' ) + '">' +
-				'<div class="pm-card-inner">' + front + back + '</div>' +
-				'</div>'
-			);
+			return '<article class="pm-card' + ( hasStory ? ' pm-card--flip' : '' ) + '" role="listitem" aria-labelledby="' + nameId + '"><div class="pm-card-inner">' + front + back + '</div></article>';
 		}
 
 		function renderChips() {
@@ -606,16 +649,18 @@
 			} );
 
 			if ( ! active.length ) {
-				chipsEl.innerHTML =
-					'<span class="pm-chip-tip">💗 Tip: pick a filter… or hit Shuffle for chaos</span>';
+				chipsEl.innerHTML = '<span class="pm-chip-tip">' + escapeHtml( message( 'filterTip', 'Choose a filter to narrow the list.' ) ) + '</span>';
+				each( clearButtons, function ( button ) { button.hidden = true; } );
 				return;
 			}
+			each( clearButtons, function ( button ) { button.hidden = false; } );
 
 			chipsEl.innerHTML = active.map( function ( k ) {
+				var label = filterLabels[ k ];
 				return (
-					'<button type="button" class="pm-chip" data-pm-chip="' + escapeHtml( k ) + '">' +
-					escapeHtml( FILTER_LABEL[ k ] + ': ' + state[ k ] ) +
-					' <span class="pm-chip-x" aria-hidden="true">✕</span>' +
+					'<button type="button" class="pm-chip" data-pm-chip="' + escapeHtml( k ) + '" aria-label="' + escapeHtml( message( 'removeFilter', 'Remove {label} filter', { label: label } ) ) + '">' +
+					escapeHtml( label + ': ' + state[ k ] ) +
+					' <span class="pm-chip-x" aria-hidden="true">' + icon( 'close' ) + '</span>' +
 					'</button>'
 				);
 			} ).join( '' );
@@ -628,16 +673,26 @@
 						selects[ key ].value = 'all';
 					}
 					resetAndPaint();
+					if ( selects[ key ] && selects[ key ].focus ) {
+						selects[ key ].focus();
+					}
 				} );
 			} );
 		}
 
-		function renderCount( shown, total ) {
-			if ( ! countEl ) {
-				return;
+		function announce( text ) {
+			if ( statusEl ) {
+				statusEl.textContent = text;
 			}
-			countEl.innerHTML =
-				'<span class="pm-count-pill">🔎 Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong></span>';
+		}
+
+		function renderCount( shown, total ) {
+			var text = message( 'showingCount', 'Showing {shown} of {total}', { shown: shown, total: total } );
+			if ( countEl ) {
+				countEl.classList.remove( 'is-loading' );
+				countEl.innerHTML = '<span class="pm-count-pill">' + escapeHtml( text ) + '</span>';
+			}
+			announce( text );
 		}
 
 		function readFilters() {
@@ -655,28 +710,45 @@
 		}
 
 		function setBusy( busy ) {
+			loading = !! busy;
 			grid.setAttribute( 'aria-busy', busy ? 'true' : 'false' );
+			each( root.querySelectorAll( '[data-pm-filter], [data-pm-action="shuffle"], [data-pm-action="clear"]' ), function ( control ) {
+				control.disabled = !! busy;
+			} );
+		}
+
+		function statePanel( iconName, title, text, actions ) {
+			return (
+				'<div class="pm-state">' +
+				'<div class="pm-state-icon" aria-hidden="true">' + icon( iconName ) + '</div>' +
+				'<h4 class="pm-state-title">' + escapeHtml( title ) + '</h4>' +
+				'<p class="pm-state-text">' + escapeHtml( text ) + '</p>' +
+				( actions || '' ) +
+				'</div>'
+			);
 		}
 
 		// Full (re)render of the visible window [0, shown).
 		function paint() {
+			grid.setAttribute( 'role', 'list' );
 			readFilters();
 			renderChips();
 			filtered = applyFilters( cats );
 
 			if ( ! filtered.length ) {
-				grid.innerHTML =
-					'<div class="pm-empty">' +
-					'<div class="pm-empty-emoji">🙀</div>' +
-					'<div class="pm-empty-title">No matches for those filters</div>' +
-					'<div class="pm-empty-text">Try clearing a filter or two.</div>' +
-					'<button type="button" class="pm-btn pm-btn-brand" data-pm-action="clear">Clear filters</button>' +
-					'</div>';
-				wireActions();
+				var noMatchesTitle = message( 'noMatchesTitle', 'No pets match those filters' );
+				grid.setAttribute( 'role', 'region' );
+				grid.innerHTML = statePanel(
+					'search',
+					noMatchesTitle,
+					message( 'noMatchesText', 'Try removing a filter to see more friends.' ),
+					'<button type="button" class="pm-btn pm-btn-brand" data-pm-action="clear">' + escapeHtml( message( 'clearFilters', 'Clear filters' ) ) + '</button>'
+				);
 				renderedCount = 0;
 				if ( countEl ) {
-					countEl.innerHTML = '';
+					countEl.textContent = '';
 				}
+				announce( noMatchesTitle );
 				updateMore();
 				setBusy( false );
 				return;
@@ -696,9 +768,12 @@
 				return;
 			}
 			shown = ( shown === Infinity ) ? filtered.length : ( shown + ( perPage > 0 ? perPage : filtered.length ) );
+			var start = renderedCount;
 			var next = filtered.slice( renderedCount, shown );
 			if ( next.length ) {
-				grid.insertAdjacentHTML( 'beforeend', next.map( card ).join( '' ) );
+				grid.insertAdjacentHTML( 'beforeend', next.map( function ( item, index ) {
+					return card( item, start + index );
+				} ).join( '' ) );
 				renderedCount += next.length;
 			}
 			renderCount( renderedCount, filtered.length );
@@ -726,6 +801,7 @@
 		}
 
 		function showSkeletons() {
+			grid.setAttribute( 'role', 'list' );
 			var n = Math.min( 6, Math.max( 3, perPage > 0 ? perPage : 6 ) );
 			var html = '';
 			for ( var i = 0; i < n; i++ ) {
@@ -733,90 +809,91 @@
 			}
 			grid.innerHTML = html;
 			if ( countEl ) {
-				countEl.innerHTML =
-					'<span class="pm-loading"><span class="pm-paws"><i>🐾</i><i>🐾</i><i>🐾</i></span> ' +
-					'Finding adoptable pets…</span>';
+				countEl.classList.add( 'is-loading' );
+				countEl.innerHTML = '<span class="pm-loading"><span class="pm-paws" aria-hidden="true"><i></i><i></i><i></i></span>' + escapeHtml( message( 'loading', 'Finding adoptable pets…' ) ) + '</span>';
 			}
+			announce( message( 'loading', 'Finding adoptable pets…' ) );
 		}
 
-		function showError( message ) {
+		function showError() {
+			grid.setAttribute( 'role', 'region' );
 			// If the live listings can't load, point visitors to the shelter's
 			// other adoption pages (configured) instead of a dead end.
 			var links = '';
 			if ( cfg.adoptapetUrl ) {
-				links += '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( safeUrl( cfg.adoptapetUrl ) ) + '" target="_blank" rel="noopener noreferrer">🐾 View on Adopt-a-Pet</a>';
+				links += '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( safeUrl( cfg.adoptapetUrl ) ) + '" target="_blank" rel="noopener noreferrer">' + icon( 'paw' ) + escapeHtml( message( 'viewAdoptapet', 'View on Adopt-a-Pet' ) ) + '<span class="pm-sr-only"> ' + escapeHtml( message( 'newTab', '(opens in a new tab)' ) ) + '</span></a>';
 			}
 			if ( cfg.petfinderMemberUrl ) {
-				links += '<a class="pm-btn" href="' + escapeHtml( safeUrl( cfg.petfinderMemberUrl ) ) + '" target="_blank" rel="noopener noreferrer">🔎 View on Petfinder</a>';
+				links += '<a class="pm-btn" href="' + escapeHtml( safeUrl( cfg.petfinderMemberUrl ) ) + '" target="_blank" rel="noopener noreferrer">' + icon( 'search' ) + escapeHtml( message( 'viewPetfinder', 'View on Petfinder' ) ) + '<span class="pm-sr-only"> ' + escapeHtml( message( 'newTab', '(opens in a new tab)' ) ) + '</span></a>';
 			}
 
+			var errorTitle;
 			if ( links ) {
-				grid.innerHTML =
-					'<div class="pm-error">' +
-					'<div class="pm-error-emoji">🐾</div>' +
-					'<div class="pm-error-title">Our live listings are taking a cat nap</div>' +
-					'<div class="pm-error-text">No worries — browse our adoptable pets on these platforms:</div>' +
-					'<div class="pm-fallback-links">' + links + '</div>' +
-					'<button type="button" class="pm-link-btn" data-pm-action="retry">Try the live grid again</button>' +
-					'</div>';
+				errorTitle = message( 'fallbackTitle', 'Our live listings are taking a cat nap' );
+				grid.innerHTML = statePanel(
+					'paw',
+					errorTitle,
+					message( 'fallbackText', 'You can still browse adoptable pets on these platforms.' ),
+					'<div class="pm-state-actions">' + links + '</div><button type="button" class="pm-link-btn" data-pm-action="retry">' + escapeHtml( message( 'tryAgain', 'Try again' ) ) + '</button>'
+				);
 			} else {
-				grid.innerHTML =
-					'<div class="pm-error">' +
-					'<div class="pm-error-emoji">😿</div>' +
-					'<div class="pm-error-title">' + escapeHtml( message ) + '</div>' +
-					'<div class="pm-error-text">Please try again in a moment.</div>' +
-					'<button type="button" class="pm-btn pm-btn-brand" data-pm-action="retry">Try again</button>' +
-					'</div>';
+				errorTitle = message( 'errorTitle', 'We couldn’t load the pets right now' );
+				grid.innerHTML = statePanel(
+					'refresh',
+					errorTitle,
+					message( 'errorText', 'Please try again in a moment.' ),
+					'<button type="button" class="pm-btn pm-btn-brand" data-pm-action="retry">' + icon( 'refresh' ) + escapeHtml( message( 'tryAgain', 'Try again' ) ) + '</button>'
+				);
 			}
 
 			if ( countEl ) {
-				countEl.innerHTML = '';
+				countEl.classList.remove( 'is-loading' );
+				countEl.textContent = '';
 			}
+			announce( errorTitle );
 			if ( chipsEl ) {
 				chipsEl.innerHTML = '';
 			}
 			if ( moreEl ) {
 				moreEl.hidden = true;
 			}
-			wireActions();
 			setBusy( false );
 		}
 
 		function showEmpty() {
-			grid.innerHTML =
-				'<div class="pm-empty">' +
-				'<div class="pm-empty-emoji">🐾</div>' +
-				'<div class="pm-empty-title">No adoptable pets right now</div>' +
-				'<div class="pm-empty-text">Please check back soon — new friends arrive all the time!</div>' +
-				'</div>';
+			var emptyTitle = message( 'emptyTitle', 'No adoptable pets right now' );
+			grid.setAttribute( 'role', 'region' );
+			grid.innerHTML = statePanel( 'paw', emptyTitle, message( 'emptyText', 'Please check back soon — new friends arrive all the time.' ) );
 			if ( countEl ) {
-				countEl.innerHTML = '';
+				countEl.classList.remove( 'is-loading' );
+				countEl.textContent = '';
 			}
+			announce( emptyTitle );
 			setBusy( false );
 		}
 
 		// Shown when no organization has been configured yet. Admins get a
 		// setup nudge; visitors get a neutral message.
 		function showNotConfigured() {
+			var notConfiguredTitle;
+			grid.setAttribute( 'role', 'region' );
 			if ( cfg.canConfigure ) {
-				grid.innerHTML =
-					'<div class="pm-empty">' +
-					'<div class="pm-empty-emoji">⚙️</div>' +
-					'<div class="pm-empty-title">Purrfect Match isn’t set up yet</div>' +
-					'<div class="pm-empty-text">Add your Petfinder organization ID to start showing adoptable pets.</div>' +
-					( cfg.settingsUrl ? '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( safeUrl( cfg.settingsUrl ) ) + '">Open settings</a>' : '' ) +
-					'</div>';
+				notConfiguredTitle = message( 'notConfiguredTitle', 'Purrfect Match isn’t set up yet' );
+				grid.innerHTML = statePanel(
+					'paw',
+					notConfiguredTitle,
+					message( 'notConfiguredText', 'Add your Petfinder organization ID to start showing adoptable pets.' ),
+					cfg.settingsUrl ? '<a class="pm-btn pm-btn-brand" href="' + escapeHtml( safeUrl( cfg.settingsUrl ) ) + '">' + escapeHtml( message( 'openSettings', 'Open settings' ) ) + '</a>' : ''
+				);
 			} else {
-				grid.innerHTML =
-					'<div class="pm-empty">' +
-					'<div class="pm-empty-emoji">🐾</div>' +
-					'<div class="pm-empty-title">No pets to show right now</div>' +
-					'<div class="pm-empty-text">Please check back soon!</div>' +
-					'</div>';
+				notConfiguredTitle = message( 'visitorEmptyTitle', 'No pets to show right now' );
+				grid.innerHTML = statePanel( 'paw', notConfiguredTitle, message( 'visitorEmptyText', 'Please check back soon.' ) );
 			}
 			if ( countEl ) {
-				countEl.innerHTML = '';
+				countEl.classList.remove( 'is-loading' );
+				countEl.textContent = '';
 			}
+			announce( notConfiguredTitle );
 			if ( chipsEl ) {
 				chipsEl.innerHTML = '';
 			}
@@ -906,12 +983,18 @@
 				}
 				useCats( list );
 			} ).catch( function ( err ) {
-				showError( ( err && err.message ) ? err.message : 'Something went wrong loading pets.' );
+				if ( window.console && window.console.error ) {
+					window.console.error( 'Purrfect Match:', err );
+				}
+				showError();
 			} );
 		}
 
 		function load() {
 			var orgs = Array.isArray( cfg.organization ) ? cfg.organization : [];
+			if ( loading ) {
+				return;
+			}
 
 			// No organization configured: never fall through to querying every
 			// shelter. Show the setup / neutral state instead.
@@ -949,31 +1032,28 @@
 
 		/* ---- event wiring ---- */
 
-		function wireActions() {
-			each( root.querySelectorAll( '[data-pm-action]' ), function ( btn ) {
-				if ( btn.__pmWired ) {
-					return;
-				}
-				btn.__pmWired = true;
-				btn.addEventListener( 'click', function () {
-					var action = btn.getAttribute( 'data-pm-action' );
-					if ( action === 'shuffle' ) {
-						shuffle();
-					} else if ( action === 'clear' ) {
-						clear();
-					} else if ( action === 'retry' ) {
-						load();
-					} else if ( action === 'more' ) {
-						appendMore();
-					}
-				} );
-			} );
-		}
-
 		activeKeys.forEach( function ( k ) {
 			selects[ k ].addEventListener( 'change', resetAndPaint );
 		} );
-		wireActions();
+
+		// One delegated handler covers both template controls and state buttons
+		// rendered later with innerHTML.
+		root.addEventListener( 'click', function ( e ) {
+			var btn = e.target && e.target.closest ? e.target.closest( '[data-pm-action]' ) : null;
+			if ( ! btn || ! root.contains( btn ) || btn.disabled ) {
+				return;
+			}
+			var action = btn.getAttribute( 'data-pm-action' );
+			if ( action === 'shuffle' ) {
+				shuffle();
+			} else if ( action === 'clear' ) {
+				clear();
+			} else if ( action === 'retry' ) {
+				load();
+			} else if ( action === 'more' ) {
+				appendMore();
+			}
+		} );
 
 		// Flip cards to reveal/hide the pet story (delegated — cards are dynamic).
 		grid.addEventListener( 'click', function ( e ) {
@@ -988,8 +1068,12 @@
 			}
 			var flipped = cardEl.classList.toggle( 'is-flipped' );
 			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
+			var story = cardEl.querySelector( '[data-pm-story]' );
 			if ( opener ) {
 				opener.setAttribute( 'aria-expanded', flipped ? 'true' : 'false' );
+			}
+			if ( story ) {
+				story.setAttribute( 'aria-hidden', flipped ? 'false' : 'true' );
 			}
 			// The activated button ends up visibility:hidden (front hides while
 			// the story shows, panel hides on close), which would drop focus to
@@ -1012,6 +1096,10 @@
 			}
 			cardEl.classList.remove( 'is-flipped' );
 			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
+			var story = cardEl.querySelector( '[data-pm-story]' );
+			if ( story ) {
+				story.setAttribute( 'aria-hidden', 'true' );
+			}
 			if ( opener ) {
 				opener.setAttribute( 'aria-expanded', 'false' );
 				if ( opener.focus ) {
@@ -1019,18 +1107,6 @@
 				}
 			}
 		} );
-
-		// Auto-load the next batch when the "Load more" button nears the viewport.
-		if ( moreEl && window.IntersectionObserver ) {
-			var io = new window.IntersectionObserver( function ( entries ) {
-				for ( var i = 0; i < entries.length; i++ ) {
-					if ( entries[ i ].isIntersecting && ! moreEl.hidden ) {
-						appendMore();
-					}
-				}
-			}, { rootMargin: '320px' } );
-			io.observe( moreEl );
-		}
 
 		load();
 	}

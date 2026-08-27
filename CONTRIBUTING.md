@@ -19,7 +19,7 @@ and JS directly and test in a WordPress install (drop the folder into
   direct access and escapes/sanitizes at the boundary.
 - **JavaScript** is dependency-free and ES5-compatible (no framework, no
   transpile) so it runs anywhere WordPress does.
-- **CSS** is hand-written and scoped under `.pm-wrap`.
+- **CSS** is hand-written and uses the plugin's `.pm-` class namespace.
 
 Before opening a PR, make sure changed files pass a quick lint:
 
@@ -44,6 +44,7 @@ Bump the version in lockstep in:
 - `purrfect-match.php` — the `Version:` header **and** the
   `PURRFECT_MATCH_VERSION` constant
 - `readme.txt` — `Stable tag:`
+- `README.md` — version badge URL and alt text
 
 …and add a `== Changelog ==` entry in `readme.txt`.
 

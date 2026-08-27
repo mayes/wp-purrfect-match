@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Purrfect Match — Explorer Preview</title>
+	<link rel="stylesheet" href="../assets/css/explorer.css">
+	<style>
+		html,body{margin:0;background:#f0f0f1;color:#1d2327;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{padding:0 28px 44px}.wpbar{height:32px;margin:0 -28px 18px;padding:0 28px;display:flex;align-items:center;gap:18px;background:#1d2327;color:#f0f0f1;font-size:13px}.wrap{margin:0 auto}.button{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 12px;border:1px solid #8c8f94;border-radius:5px;background:#f6f7f7;color:#2271b1;font:600 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}.button-primary{border-color:#e93396;background:#e93396!important;color:#000!important}.screen-title{max-width:1180px;margin:0 auto 4px;color:#646970;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase}@media(max-width:782px){body{padding:0 12px 28px}.wpbar{margin:0 -12px 12px;padding:0 12px}}
+	</style>
+</head>
+<body>
+	<div class="wpbar"><strong>WordPress</strong><span>CJ Paws</span><span>Tools</span><span style="margin-left:auto">Howdy, Andrew</span></div>
+	<div class="screen-title">Tools · Petfinder Explorer</div>
+	<div class="wrap pm-explorer" style="--pmx-brand:#e93396;--pmx-on-brand:#000000">
+		<header class="pmx-hero"><div><span class="pmx-eyebrow">Developer tool</span><h1>Petfinder Explorer</h1><p class="pmx-intro">Run live GraphQL queries from your site and inspect the fields Petfinder exposes for each animal.</p></div><div class="pmx-context"><span>Current context</span><strong>FL1629</strong><small>Cat</small></div></header>
+		<div class="pmx-toolbar"><label for="endpoint">GraphQL endpoint</label><input type="url" id="endpoint" class="pmx-endpoint regular-text code" value="https://psl.petfinder.com/graphql" spellcheck="false"></div>
+		<div class="pmx-presets"><span class="pmx-presets-label">Start with a preset</span><button type="button" class="button">Organization</button><button type="button" class="button is-selected" aria-pressed="true">Animal search</button><button type="button" class="button">Animal attributes</button><button type="button" class="button">Schema introspection</button><button type="button" class="button button-primary">Discover extra fields</button></div>
+		<div class="pmx-cols">
+			<div class="pmx-pane"><div class="pmx-pane-head"><strong>Request</strong><span>Ctrl/⌘ + Enter to run</span></div><label class="pmx-lbl" for="query">GraphQL query</label><textarea id="query" dir="ltr" spellcheck="false">query SearchAnimal(
+  $pagination: PaginationInfoInput!
+  $filters: AnimalSearchFiltersInput!
+) {
+  searchAnimal(pagination: $pagination, filters: $filters) {
+    totalCount
+    animals {
+      animalId animalName primaryPhotoId
+      physical { breed { primary } age { label } }
+      _contact { address { city state } }
+    }
+  }
+}</textarea><label class="pmx-lbl" for="vars">Variables (JSON)</label><textarea id="vars" dir="ltr" spellcheck="false">{
+  "pagination": { "fromPage": 0, "pageSize": 3 },
+  "filters": {
+    "animal_type": ["cat"],
+    "adoption_status": "adoptable"
+  }
+}</textarea><div class="pmx-run-row"><button type="button" class="button button-primary pmx-run">Run query</button><span class="pmx-status ok">OK • 184 ms</span></div></div>
+			<div class="pmx-pane"><div class="pmx-pane-head"><strong>Response</strong><span>Formatted JSON</span></div><pre dir="ltr" role="region" tabindex="0">{
+  "data": {
+    "searchAnimal": {
+      "totalCount": 28,
+      "animals": [
+        {
+          "animalId": "72184319",
+          "animalName": "Mochi",
+          "primaryPhotoId": "pets/72184319/1",
+          "physical": {
+            "breed": { "primary": "Domestic Short Hair" },
+            "age": { "label": "Young" }
+          },
+          "_contact": {
+            "address": {
+              "city": "St. Petersburg",
+              "state": "FL"
+            }
+          }
+        }
+      ]
+    }
+  }
+}</pre></div>
+		</div>
+		<div class="pmx-tip"><strong>Tip</strong> “Discover extra fields” resolves your configured organization and probes optional animal fields such as descriptions, photos, videos, and attributes.</div>
+	</div>
+</body>
+</html>
