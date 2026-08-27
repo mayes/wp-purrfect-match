@@ -12,7 +12,14 @@ SLUG="purrfect-match"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-VERSION="$(grep -m1 'Stable tag:' readme.txt | sed 's/.*:[[:space:]]*//')"
+# git archive packages committed HEAD, so refuse a misleading release when
+# tracked files differ from that commit.
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Refusing to build: commit or stash tracked changes first." >&2
+  exit 1
+fi
+
+VERSION="$(git show HEAD:readme.txt | grep -m1 'Stable tag:' | sed 's/.*:[[:space:]]*//')"
 OUT="dist"
 mkdir -p "$OUT"
 rm -f "${OUT}/${SLUG}.zip"

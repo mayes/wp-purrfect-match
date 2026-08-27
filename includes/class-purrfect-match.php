@@ -83,6 +83,7 @@ class Purrfect_Match {
 		$this->rest->hooks();
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
+		add_action( 'wp_footer', array( $this, 'print_late_styles' ), 1 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_assets' ) );
 		add_shortcode( 'purrfect_match', array( $this, 'render_shortcode' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( PURRFECT_MATCH_FILE ), array( $this, 'action_links' ) );
@@ -111,6 +112,14 @@ class Purrfect_Match {
 				PURRFECT_MATCH_VERSION,
 				true
 			);
+			wp_localize_script(
+				'purrfect-match-admin',
+				'PM_ADMIN',
+				array(
+					'copied'     => __( 'Copied!', 'purrfect-match' ),
+					'copyFailed' => __( 'Copy failed', 'purrfect-match' ),
+				)
+			);
 			return;
 		}
 
@@ -136,8 +145,9 @@ class Purrfect_Match {
 				'purrfect-match-explorer',
 				'PM_EXPLORER',
 				array(
-					'org'  => $orgs ? reset( $orgs ) : 'FL1629',
-					'type' => $options['type'],
+					'org'     => $orgs ? reset( $orgs ) : '',
+					'type'    => $options['type'],
+					'apiBase' => $options['api_base'],
 				)
 			);
 		}
@@ -175,7 +185,8 @@ class Purrfect_Match {
 	}
 
 	/**
-	 * Register (but do not enqueue) front-end assets.
+	 * Register public assets and enqueue styles early when the current query
+	 * contains the shortcode.
 	 *
 	 * @return void
 	 */
@@ -194,6 +205,31 @@ class Purrfect_Match {
 			PURRFECT_MATCH_VERSION,
 			true
 		);
+
+		// Most shortcodes render after wp_head(). Detect them from the queried
+		// posts so the stylesheet can still be printed in the document head,
+		// without charging every front-end request for widget CSS.
+		global $wp_query;
+		$posts = isset( $wp_query->posts ) && is_array( $wp_query->posts ) ? $wp_query->posts : array();
+		foreach ( $posts as $post ) {
+			if ( is_object( $post ) && isset( $post->post_content ) && has_shortcode( $post->post_content, 'purrfect_match' ) ) {
+				wp_enqueue_style( 'purrfect-match' );
+				break;
+			}
+		}
+	}
+
+	/**
+	 * Print the widget stylesheet for shortcodes injected after wp_head(), such
+	 * as a dynamic sidebar or builder module. Conventional post shortcodes are
+	 * detected early by register_assets() and never use this fallback.
+	 *
+	 * @return void
+	 */
+	public function print_late_styles() {
+		if ( wp_style_is( 'purrfect-match', 'enqueued' ) && ! wp_style_is( 'purrfect-match', 'done' ) ) {
+			wp_print_styles( 'purrfect-match' );
+		}
 	}
 
 	/**
@@ -262,17 +298,140 @@ class Purrfect_Match {
 		);
 
 		// Normalize types. limit 0 = "all".
-		$atts['limit']      = min( 1000, absint( $atts['limit'] ) );
-		$atts['per_page']   = min( 100, absint( $atts['per_page'] ) );
-		$atts['columns']    = max( 2, min( 4, absint( $atts['columns'] ) ) );
+		$atts['limit']       = min( 1000, absint( $atts['limit'] ) );
+		$atts['per_page']    = min( 100, absint( $atts['per_page'] ) );
+		$atts['columns']     = max( 2, min( 4, absint( $atts['columns'] ) ) );
 		$atts['hide_breed']  = $this->truthy( $atts['hide_breed'] );
 		$atts['show_credit'] = $this->truthy( $atts['show_credit'] );
+
+		$allowed_types = array( 'cat', 'dog', 'rabbit', 'small-furry', 'bird', 'horse', 'barnyard', 'scales-fins-other' );
+		if ( ! in_array( $atts['type'], $allowed_types, true ) ) {
+			$atts['type'] = $options['type'];
+		}
+
+		$allowed_status = array( 'adoptable', 'adopted', 'found' );
+		if ( ! in_array( $atts['status'], $allowed_status, true ) ) {
+			$atts['status'] = $options['status'];
+		}
+
+		$organizations = array_filter( array_map( 'trim', explode( ',', (string) $atts['organization'] ) ) );
+		$organizations = array_map(
+			static function ( $id ) {
+				return preg_replace( '/[^A-Za-z0-9\-]/', '', $id );
+			},
+			$organizations
+		);
+		$atts['organization'] = implode( ', ', array_filter( $organizations ) );
 
 		if ( ! preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $atts['brand'] ) ) {
 			$atts['brand'] = '#e93396';
 		}
 
 		return $atts;
+	}
+
+	/**
+	 * Derive CSS-ready brand tokens, including a readable foreground color.
+	 *
+	 * @param string $hex Six-digit hexadecimal color.
+	 * @return array RGB channels and a contrast-safe foreground.
+	 */
+	protected function brand_tokens( $hex ) {
+		$hex = ltrim( (string) $hex, '#' );
+		$r   = hexdec( substr( $hex, 0, 2 ) );
+		$g   = hexdec( substr( $hex, 2, 2 ) );
+		$b   = hexdec( substr( $hex, 4, 2 ) );
+
+		$linearize = static function ( $channel ) {
+			$value = $channel / 255;
+			return $value <= 0.03928 ? $value / 12.92 : pow( ( $value + 0.055 ) / 1.055, 2.4 );
+		};
+		$luminance = ( 0.2126 * $linearize( $r ) ) + ( 0.7152 * $linearize( $g ) ) + ( 0.0722 * $linearize( $b ) );
+
+		$contrast_ratio = static function ( $first, $second ) {
+			$lighter = max( $first, $second );
+			$darker  = min( $first, $second );
+			return ( $lighter + 0.05 ) / ( $darker + 0.05 );
+		};
+
+		$candidates = array(
+			'#1b1714' => ( 0.2126 * $linearize( 27 ) ) + ( 0.7152 * $linearize( 23 ) ) + ( 0.0722 * $linearize( 20 ) ),
+			'#fffdf9' => ( 0.2126 * $linearize( 255 ) ) + ( 0.7152 * $linearize( 253 ) ) + ( 0.0722 * $linearize( 249 ) ),
+		);
+		$contrast   = '#1b1714';
+		$best_ratio = 0;
+
+		foreach ( $candidates as $candidate => $candidate_luminance ) {
+			$ratio = $contrast_ratio( $luminance, $candidate_luminance );
+			if ( $ratio > $best_ratio ) {
+				$contrast   = $candidate;
+				$best_ratio = $ratio;
+			}
+		}
+
+		// Near the WCAG crossover point, use almost-black/almost-white rather
+		// than pure endpoints so arbitrary organization colors still reach AA.
+		if ( $best_ratio < 4.5 ) {
+			$fallbacks = array(
+				'#050403' => ( 0.2126 * $linearize( 5 ) ) + ( 0.7152 * $linearize( 4 ) ) + ( 0.0722 * $linearize( 3 ) ),
+				'#fffefa' => ( 0.2126 * $linearize( 255 ) ) + ( 0.7152 * $linearize( 254 ) ) + ( 0.0722 * $linearize( 250 ) ),
+			);
+			foreach ( $fallbacks as $candidate => $candidate_luminance ) {
+				$ratio = $contrast_ratio( $luminance, $candidate_luminance );
+				if ( $ratio > $best_ratio ) {
+					$contrast   = $candidate;
+					$best_ratio = $ratio;
+				}
+			}
+		}
+
+		return array(
+			'rgb'      => $r . ', ' . $g . ', ' . $b,
+			'contrast' => $contrast,
+		);
+	}
+
+	/**
+	 * Localized copy used by the browser-rendered portions of the widget.
+	 *
+	 * @return array
+	 */
+	protected function frontend_strings() {
+		return array(
+			'breed'              => __( 'Breed', 'purrfect-match' ),
+			'size'               => __( 'Size', 'purrfect-match' ),
+			'age'                => __( 'Age', 'purrfect-match' ),
+			'readStory'          => __( 'Read {name}\'s story', 'purrfect-match' ),
+			'readStoryShort'     => __( 'Read story', 'purrfect-match' ),
+			'hideStory'          => __( 'Hide {name}\'s story', 'purrfect-match' ),
+			'back'               => __( 'Back', 'purrfect-match' ),
+			'apply'              => __( 'Apply to adopt', 'purrfect-match' ),
+			'viewProfile'        => __( 'View profile', 'purrfect-match' ),
+			'meetPet'            => __( 'Meet {name}', 'purrfect-match' ),
+			'newTab'             => __( '(opens in a new tab)', 'purrfect-match' ),
+			'photoOf'            => __( 'Photo of {name}', 'purrfect-match' ),
+			'filterTip'          => __( 'Choose a filter to narrow the list.', 'purrfect-match' ),
+			'removeFilter'       => __( 'Remove {label} filter', 'purrfect-match' ),
+			'showingCount'       => __( 'Showing {shown} of {total}', 'purrfect-match' ),
+			'noMatchesTitle'     => __( 'No pets match those filters', 'purrfect-match' ),
+			'noMatchesText'      => __( 'Try removing a filter to see more friends.', 'purrfect-match' ),
+			'clearFilters'       => __( 'Clear filters', 'purrfect-match' ),
+			'loading'            => __( 'Finding adoptable pets…', 'purrfect-match' ),
+			'fallbackTitle'      => __( 'Our live listings are taking a cat nap', 'purrfect-match' ),
+			'fallbackText'       => __( 'You can still browse adoptable pets on these platforms.', 'purrfect-match' ),
+			'viewAdoptapet'      => __( 'View on Adopt-a-Pet', 'purrfect-match' ),
+			'viewPetfinder'      => __( 'View on Petfinder', 'purrfect-match' ),
+			'tryAgain'           => __( 'Try again', 'purrfect-match' ),
+			'errorTitle'         => __( 'We couldn’t load the pets right now', 'purrfect-match' ),
+			'errorText'          => __( 'Please try again in a moment.', 'purrfect-match' ),
+			'emptyTitle'         => __( 'No adoptable pets right now', 'purrfect-match' ),
+			'emptyText'          => __( 'Please check back soon — new friends arrive all the time.', 'purrfect-match' ),
+			'notConfiguredTitle' => __( 'Purrfect Match isn’t set up yet', 'purrfect-match' ),
+			'notConfiguredText'  => __( 'Add your Petfinder organization ID to start showing adoptable pets.', 'purrfect-match' ),
+			'openSettings'       => __( 'Open settings', 'purrfect-match' ),
+			'visitorEmptyTitle'  => __( 'No pets to show right now', 'purrfect-match' ),
+			'visitorEmptyText'   => __( 'Please check back soon.', 'purrfect-match' ),
+		);
 	}
 
 	/**
@@ -284,12 +443,13 @@ class Purrfect_Match {
 	protected function build_config( $atts ) {
 		$orgs = array_filter( array_map( 'trim', explode( ',', (string) $atts['organization'] ) ) );
 		$orgs = array_values( $orgs );
+		$s3_url = esc_url_raw( $atts['s3_url'] );
 
 		$options = Purrfect_Match_Settings::get_options();
 
 		return array(
 			'apiBase'      => esc_url_raw( $atts['api_base'] ),
-			's3Url'        => esc_url_raw( $atts['s3_url'] ),
+			's3Url'        => $s3_url ? trailingslashit( $s3_url ) : '',
 			'petfinderUrl' => esc_url_raw( $atts['petfinder_url'] ),
 			'organization'      => $orgs,
 			'type'              => sanitize_text_field( $atts['type'] ),
@@ -314,6 +474,7 @@ class Purrfect_Match {
 			// cached/anonymous page never carries a usable REST nonce.
 			'restNonce'         => current_user_can( 'edit_pages' ) ? wp_create_nonce( 'wp_rest' ) : '',
 			'canWrite'          => current_user_can( 'edit_pages' ),
+			'strings'           => $this->frontend_strings(),
 		);
 	}
 
@@ -356,6 +517,9 @@ class Purrfect_Match {
 		$atts = $this->resolve_atts( $atts );
 
 		if ( ! $this->enqueued ) {
+			if ( ! wp_style_is( 'purrfect-match', 'registered' ) || ! wp_script_is( 'purrfect-match', 'registered' ) ) {
+				$this->register_assets();
+			}
 			wp_enqueue_style( 'purrfect-match' );
 			wp_enqueue_script( 'purrfect-match' );
 			$this->enqueued = true;
@@ -365,6 +529,7 @@ class Purrfect_Match {
 		$instance_id = 'pm-' . $this->instance_count;
 		$config      = $this->build_config( $atts );
 		$schema_ld   = $this->build_schema_ld( $atts );
+		$brand_tokens = $this->brand_tokens( $atts['brand'] );
 
 		ob_start();
 		include PURRFECT_MATCH_PATH . 'templates/widget.php';

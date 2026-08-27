@@ -1,120 +1,259 @@
 /**
- * Petfinder Explorer — wp-admin tool page.
- * Runs from the site's own origin, which Petfinder allows (unlike file://).
+ * Petfinder Explorer — focused GraphQL workbench for wp-admin.
  */
 
-.pm-explorer { --pmx-brand: #e93396; max-width: 1100px; }
+.pm-explorer {
+	--pmx-brand: #e93396;
+	--pmx-on-brand: #211d1a;
+	--pmx-ink: #27231f;
+	--pmx-muted: #696158;
+	--pmx-line: #e1d9cf;
+	--pmx-surface: #fffdf9;
+	max-width: 1180px;
+	color: var(--pmx-ink);
+}
 
-.pm-explorer h1 { display: flex; align-items: center; gap: .5rem; }
+.pm-explorer *,
+.pm-explorer *::before,
+.pm-explorer *::after { box-sizing: border-box; }
+
+.pm-explorer :is(button, input, textarea, pre):focus-visible {
+	outline: 3px solid #0b63ce !important;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 2px #fff !important;
+}
+
+.pmx-hero {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1.5rem;
+	margin: 1rem 0 1.1rem;
+	padding: 1.8rem;
+	border-radius: 18px;
+	background: #211e1b;
+	background:
+		radial-gradient(circle at 80% 15%, color-mix(in srgb, var(--pmx-brand) 36%, transparent), transparent 30%),
+		linear-gradient(125deg, #211e1b, #37302a);
+	color: #fff;
+	box-shadow: 0 20px 44px -34px rgba(25, 20, 16, .85);
+}
+
+.pmx-eyebrow {
+	display: inline-flex;
+	padding: .25rem .55rem;
+	border: 1px solid rgba(255, 255, 255, .2);
+	border-radius: 999px;
+	color: rgba(255, 255, 255, .72);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+}
+
+.pm-explorer .pmx-hero h1 {
+	margin: .65rem 0 0;
+	padding: 0;
+	color: #fff;
+	font-size: 2rem;
+	font-weight: 750;
+	letter-spacing: -.035em;
+}
 
 .pm-explorer .pmx-intro {
-	max-width: 70ch;
-	color: #50575e;
+	max-width: 66ch;
+	margin: .6rem 0 0;
+	color: rgba(255, 255, 255, .7);
+	font-size: .9rem;
+	line-height: 1.55;
 }
 
-.pm-explorer .pmx-bar {
+.pmx-context {
+	min-width: 190px;
 	display: flex;
-	flex-wrap: wrap;
-	gap: .5rem;
-	align-items: center;
-	margin: .75rem 0;
+	flex-direction: column;
+	padding: .8rem .9rem;
+	border: 1px solid rgba(255, 255, 255, .16);
+	border-radius: 11px;
+	background: rgba(255, 255, 255, .07);
 }
 
-.pm-explorer .pmx-bar label { font-weight: 600; }
+.pmx-context span { color: rgba(255, 255, 255, .58); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.pmx-context strong { margin-top: .25rem; color: #fff; font-size: .88rem; }
+.pmx-context small { margin-top: .1rem; color: rgba(255, 255, 255, .62); }
 
-.pm-explorer input[type="text"].pmx-endpoint {
-	flex: 1;
-	min-width: 320px;
-	font-family: ui-monospace, Menlo, Consolas, monospace;
-	font-size: 12px;
-}
-
-.pm-explorer .pmx-presets {
-	display: flex;
-	flex-wrap: wrap;
-	gap: .4rem;
-	margin-bottom: .75rem;
-}
-
-.pm-explorer .pmx-presets .button { font-size: 12px; }
-
-.pm-explorer .pmx-cols {
+.pmx-toolbar {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 1rem;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: .75rem;
+	margin-bottom: .75rem;
+	padding: .8rem 1rem;
+	border: 1px solid var(--pmx-line);
+	border-radius: 11px;
+	background: var(--pmx-surface);
+}
+
+.pmx-toolbar label { font-size: .75rem; font-weight: 700; }
+
+.pm-explorer input.pmx-endpoint {
+	width: 100%;
+	min-height: 38px;
+	margin: 0;
+	border-color: #d6cec4;
+	border-radius: 7px;
+	font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.pmx-presets {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: .4rem;
+	margin-bottom: .85rem;
+}
+
+.pmx-presets-label {
+	margin-right: .25rem;
+	color: var(--pmx-muted);
+	font-size: .72rem;
+	font-weight: 700;
+}
+
+.pm-explorer .pmx-presets .button {
+	min-height: 34px;
+	border-color: #d6cec4;
+	border-radius: 7px;
+	font-size: 11px;
+}
+
+.pm-explorer .pmx-presets .button.is-selected {
+	border-color: color-mix(in srgb, var(--pmx-brand) 55%, #9f968d);
+	background: color-mix(in srgb, var(--pmx-brand) 10%, #fff);
+	color: var(--pmx-ink);
+}
+
+.pm-explorer .button-primary,
+.pm-explorer .button.pmx-run {
+	border-color: var(--pmx-brand);
+	background: var(--pmx-brand);
+	color: var(--pmx-on-brand);
+	font-weight: 700;
+}
+
+.pm-explorer .button-primary:hover,
+.pm-explorer .button.pmx-run:hover {
+	border-color: var(--pmx-brand);
+	background: var(--pmx-brand);
+	color: var(--pmx-on-brand);
+	filter: brightness(.94);
+}
+
+.pmx-cols {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	align-items: stretch;
+	gap: 1rem;
 }
 
-@media ( max-width: 900px ) {
-	.pm-explorer .pmx-cols { grid-template-columns: 1fr; }
+.pmx-pane {
+	display: flex;
+	min-width: 0;
+	min-height: 0;
+	flex-direction: column;
+	padding: 1rem;
+	border: 1px solid var(--pmx-line);
+	border-radius: 13px;
+	background: var(--pmx-surface);
+	box-shadow: 0 14px 28px -30px rgba(25, 20, 16, .75);
 }
 
-.pm-explorer .pmx-pane { display: flex; flex-direction: column; min-height: 0; }
+.pmx-pane-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: .7rem;
+	margin-bottom: .7rem;
+}
+
+.pmx-pane-head strong { font-size: .86rem; }
+.pmx-pane-head span { color: var(--pmx-muted); font-size: .68rem; }
 
 .pm-explorer label.pmx-lbl {
-	font-size: 11px;
+	margin: .35rem 0 .25rem;
+	color: var(--pmx-muted);
+	font-size: 10px;
+	font-weight: 750;
+	letter-spacing: .075em;
 	text-transform: uppercase;
-	letter-spacing: .04em;
-	color: #646970;
-	margin: .25rem 0;
-	font-weight: 700;
 }
 
 .pm-explorer textarea {
 	width: 100%;
-	font-family: ui-monospace, Menlo, Consolas, monospace;
-	font-size: 13px;
-	border-radius: 8px;
 	resize: vertical;
+	border: 1px solid #d6cec4;
+	border-radius: 8px;
+	font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	tab-size: 2;
 }
 
-.pm-explorer #pmx-query { min-height: 280px; }
-.pm-explorer #pmx-vars { min-height: 90px; }
+.pm-explorer #pmx-query { min-height: 285px; }
+.pm-explorer #pmx-vars { min-height: 95px; }
 
-.pm-explorer .pmx-run-row {
+.pmx-run-row {
 	display: flex;
 	align-items: center;
 	gap: .75rem;
-	margin: .5rem 0;
+	margin-top: .7rem;
 }
 
-.pm-explorer .button.pmx-run {
-	background: var(--pmx-brand);
-	border-color: var(--pmx-brand);
-	color: #fff;
-}
-
-.pm-explorer .pmx-status { font-size: 12px; color: #646970; }
-.pm-explorer .pmx-status.ok { color: #0a7d33; font-weight: 700; }
-.pm-explorer .pmx-status.err { color: #c0143c; font-weight: 700; }
+.pmx-run-row .button { min-height: 36px; border-radius: 7px; }
+.pmx-status { color: var(--pmx-muted); font-size: 11px; }
+.pmx-status.ok { color: #16703a; font-weight: 700; }
+.pmx-status.err { color: #b4232f; font-weight: 700; }
 
 .pm-explorer #pmx-out {
-	flex: 1;
-	margin: 0;
-	padding: 12px;
-	min-height: 420px;
+	flex: 1 1 auto;
+	min-height: 445px;
+	max-height: 680px;
 	overflow: auto;
-	background: #0b1021;
-	color: #e6e6e6;
-	border-radius: 8px;
-	font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace;
+	margin: 0;
+	padding: 1rem;
+	border: 1px solid #272b35;
+	border-radius: 9px;
+	background: #11151d;
+	color: #e6edf3;
+	font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	white-space: pre-wrap;
 	word-break: break-word;
+	tab-size: 2;
 }
 
-.pm-explorer .pmx-tip {
+.pm-explorer #pmx-out[aria-busy="true"] { opacity: .72; }
+
+.pmx-tip {
+	max-width: 86ch;
 	margin-top: 1rem;
-	padding: .75rem 1rem;
-	background: #fff;
-	border-left: 3px solid var(--pmx-brand);
-	border-radius: 4px;
-	font-size: 13px;
-	color: #50575e;
-	max-width: 80ch;
+	padding: .75rem .9rem;
+	border: 1px solid var(--pmx-line);
+	border-left: 4px solid var(--pmx-brand);
+	border-radius: 8px;
+	background: var(--pmx-surface);
+	color: var(--pmx-muted);
+	font-size: .78rem;
+	line-height: 1.5;
 }
 
-.pm-explorer code {
-	background: #f0edef;
-	padding: 1px 5px;
-	border-radius: 4px;
+.pmx-tip strong { margin-right: .25rem; color: var(--pmx-ink); }
+
+@media (max-width: 900px) {
+	.pmx-cols { grid-template-columns: 1fr; }
+	.pmx-context { min-width: 160px; }
+}
+
+@media (max-width: 600px) {
+	.pmx-hero { align-items: flex-start; flex-direction: column; padding: 1.25rem; }
+	.pmx-context { width: 100%; }
+	.pmx-toolbar { grid-template-columns: 1fr; }
+	.pmx-presets-label { flex-basis: 100%; }
 }

@@ -31,9 +31,9 @@ class Purrfect_Match_Settings {
 	/**
 	 * Cached, merged options.
 	 *
-	 * @var array|null
+	 * @var array
 	 */
-	protected static $cache = null;
+	protected static $cache = array();
 
 	/**
 	 * Default option values.
@@ -91,13 +91,14 @@ class Purrfect_Match_Settings {
 	 * @return array
 	 */
 	public static function get_options() {
-		if ( null === self::$cache ) {
-			$saved        = get_option( self::OPTION, array() );
-			$saved        = is_array( $saved ) ? $saved : array();
-			self::$cache  = wp_parse_args( $saved, self::defaults() );
+		$blog_id = function_exists( 'get_current_blog_id' ) ? get_current_blog_id() : 0;
+		if ( ! isset( self::$cache[ $blog_id ] ) ) {
+			$saved                  = get_option( self::OPTION, array() );
+			$saved                  = is_array( $saved ) ? $saved : array();
+			self::$cache[ $blog_id ] = wp_parse_args( $saved, self::defaults() );
 		}
 
-		return self::$cache;
+		return self::$cache[ $blog_id ];
 	}
 
 	/**
@@ -271,45 +272,61 @@ class Purrfect_Match_Settings {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+		$options       = self::get_options();
+		$organizations = array_filter( array_map( 'trim', explode( ',', (string) $options['organization'] ) ) );
+		$explorer_org  = $organizations ? reset( $organizations ) : '';
+		$brand         = preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $options['brand'] ) ? $options['brand'] : '#e93396';
+		$on_brand      = $this->brand_contrast( $brand );
 		?>
-		<div class="wrap pm-explorer">
-			<h1><span aria-hidden="true">🔎</span> <?php esc_html_e( 'Petfinder Explorer', 'purrfect-match' ); ?></h1>
-			<p class="pmx-intro">
-				<?php esc_html_e( 'Run live GraphQL queries against Petfinder from your own site (where requests are allowed). Use “Discover extra fields” to see what data each animal exposes — handy for deciding what to show on cards.', 'purrfect-match' ); ?>
-			</p>
+		<div class="wrap pm-explorer" style="--pmx-brand: <?php echo esc_attr( $brand ); ?>; --pmx-on-brand: <?php echo esc_attr( $on_brand ); ?>;">
+			<header class="pmx-hero">
+				<div>
+					<span class="pmx-eyebrow"><?php esc_html_e( 'Developer tool', 'purrfect-match' ); ?></span>
+					<h1><?php esc_html_e( 'Petfinder Explorer', 'purrfect-match' ); ?></h1>
+					<p class="pmx-intro"><?php esc_html_e( 'Run live GraphQL queries from your site and inspect the fields Petfinder exposes for each animal.', 'purrfect-match' ); ?></p>
+				</div>
+				<div class="pmx-context">
+					<span><?php esc_html_e( 'Current context', 'purrfect-match' ); ?></span>
+					<strong><?php echo $explorer_org ? esc_html( $explorer_org ) : esc_html__( 'No organization configured', 'purrfect-match' ); ?></strong>
+					<small><?php echo esc_html( ucfirst( (string) $options['type'] ) ); ?></small>
+				</div>
+			</header>
 
-			<div class="pmx-bar">
-				<label for="pmx-endpoint"><?php esc_html_e( 'Endpoint', 'purrfect-match' ); ?></label>
-				<input type="text" id="pmx-endpoint" class="pmx-endpoint regular-text" value="https://psl.petfinder.com/graphql" spellcheck="false" />
+			<div class="pmx-toolbar">
+				<label for="pmx-endpoint"><?php esc_html_e( 'GraphQL endpoint', 'purrfect-match' ); ?></label>
+				<input type="url" id="pmx-endpoint" class="pmx-endpoint regular-text code" value="<?php echo esc_attr( $options['api_base'] ); ?>" spellcheck="false" />
 			</div>
 
 			<div class="pmx-presets">
-				<button type="button" class="button" data-preset="org"><?php esc_html_e( 'GetOrganization', 'purrfect-match' ); ?></button>
-				<button type="button" class="button" data-preset="search"><?php esc_html_e( 'SearchAnimal', 'purrfect-match' ); ?></button>
-				<button type="button" class="button" data-preset="attrs"><?php esc_html_e( 'AllAnimalAttributes', 'purrfect-match' ); ?></button>
-				<button type="button" class="button" data-preset="introspect"><?php esc_html_e( 'Introspect Animal', 'purrfect-match' ); ?></button>
-				<button type="button" class="button button-primary" id="pmx-discover"><?php esc_html_e( '🔬 Discover extra fields', 'purrfect-match' ); ?></button>
+				<span class="pmx-presets-label"><?php esc_html_e( 'Start with a preset', 'purrfect-match' ); ?></span>
+				<button type="button" class="button" data-preset="org" aria-pressed="false"><?php esc_html_e( 'Organization', 'purrfect-match' ); ?></button>
+				<button type="button" class="button" data-preset="search" aria-pressed="false"><?php esc_html_e( 'Animal search', 'purrfect-match' ); ?></button>
+				<button type="button" class="button" data-preset="attrs" aria-pressed="false"><?php esc_html_e( 'Animal attributes', 'purrfect-match' ); ?></button>
+				<button type="button" class="button" data-preset="introspect" aria-pressed="false"><?php esc_html_e( 'Schema introspection', 'purrfect-match' ); ?></button>
+				<button type="button" class="button button-primary" id="pmx-discover"><?php esc_html_e( 'Discover extra fields', 'purrfect-match' ); ?></button>
 			</div>
 
 			<div class="pmx-cols">
 				<div class="pmx-pane">
-					<label class="pmx-lbl" for="pmx-query"><?php esc_html_e( 'Query', 'purrfect-match' ); ?></label>
-					<textarea id="pmx-query" spellcheck="false"></textarea>
+					<div class="pmx-pane-head"><strong><?php esc_html_e( 'Request', 'purrfect-match' ); ?></strong><span><?php esc_html_e( 'Ctrl/⌘ + Enter to run', 'purrfect-match' ); ?></span></div>
+					<label class="pmx-lbl" for="pmx-query"><?php esc_html_e( 'GraphQL query', 'purrfect-match' ); ?></label>
+					<textarea id="pmx-query" dir="ltr" spellcheck="false"></textarea>
 					<label class="pmx-lbl" for="pmx-vars"><?php esc_html_e( 'Variables (JSON)', 'purrfect-match' ); ?></label>
-					<textarea id="pmx-vars" spellcheck="false">{}</textarea>
+					<textarea id="pmx-vars" dir="ltr" spellcheck="false">{}</textarea>
 					<div class="pmx-run-row">
-						<button type="button" class="button pmx-run" id="pmx-run"><?php esc_html_e( 'Run ▶', 'purrfect-match' ); ?></button>
-						<span class="pmx-status" id="pmx-status"><?php esc_html_e( 'Ready', 'purrfect-match' ); ?></span>
+						<button type="button" class="button button-primary pmx-run" id="pmx-run"><?php esc_html_e( 'Run query', 'purrfect-match' ); ?></button>
+						<span class="pmx-status" id="pmx-status" role="status" aria-live="polite" aria-atomic="true"><?php esc_html_e( 'Ready', 'purrfect-match' ); ?></span>
 					</div>
 				</div>
 				<div class="pmx-pane">
-					<label class="pmx-lbl"><?php esc_html_e( 'Response', 'purrfect-match' ); ?></label>
-					<pre id="pmx-out"><?php esc_html_e( 'Pick a preset or click “Discover extra fields”, then Run.', 'purrfect-match' ); ?></pre>
+					<div class="pmx-pane-head"><strong id="pmx-response-label"><?php esc_html_e( 'Response', 'purrfect-match' ); ?></strong><span><?php esc_html_e( 'Formatted JSON', 'purrfect-match' ); ?></span></div>
+					<pre id="pmx-out" dir="ltr" role="region" aria-labelledby="pmx-response-label" aria-busy="false" tabindex="0"><?php esc_html_e( 'Choose a preset, then run the query.', 'purrfect-match' ); ?></pre>
 				</div>
 			</div>
 
 			<div class="pmx-tip">
-				<?php esc_html_e( 'Tip: “Discover extra fields” resolves your organization and probes which animal fields exist (description, photos, videos, sex, attributes, environment…). Paste the result to decide what to add to the cards.', 'purrfect-match' ); ?>
+				<strong><?php esc_html_e( 'Tip', 'purrfect-match' ); ?></strong>
+				<?php esc_html_e( '“Discover extra fields” resolves your configured organization and probes optional animal fields such as descriptions, photos, videos, and attributes.', 'purrfect-match' ); ?>
 			</div>
 		</div>
 		<?php
@@ -357,9 +374,11 @@ class Purrfect_Match_Settings {
 				self::PAGE,
 				'pm_section_listing',
 				array(
-					'key'  => $key,
-					'type' => $cfg[1],
-					'desc' => $cfg[2],
+					'key'       => $key,
+					'type'      => $cfg[1],
+					'desc'      => $cfg[2],
+					'label_for' => 'pm_' . $key,
+					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
 				)
 			);
 		}
@@ -392,9 +411,11 @@ class Purrfect_Match_Settings {
 				self::PAGE,
 				'pm_section_appearance',
 				array(
-					'key'  => $key,
-					'type' => $cfg[1],
-					'desc' => $cfg[2],
+					'key'       => $key,
+					'type'      => $cfg[1],
+					'desc'      => $cfg[2],
+					'label_for' => 'pm_' . $key,
+					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
 				)
 			);
 		}
@@ -419,9 +440,11 @@ class Purrfect_Match_Settings {
 				self::PAGE,
 				'pm_section_fallback',
 				array(
-					'key'  => $key,
-					'type' => $cfg[1],
-					'desc' => $cfg[2],
+					'key'       => $key,
+					'type'      => $cfg[1],
+					'desc'      => $cfg[2],
+					'label_for' => 'pm_' . $key,
+					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
 				)
 			);
 		}
@@ -447,9 +470,11 @@ class Purrfect_Match_Settings {
 				self::PAGE,
 				'pm_section_performance',
 				array(
-					'key'  => $key,
-					'type' => $cfg[1],
-					'desc' => $cfg[2],
+					'key'       => $key,
+					'type'      => $cfg[1],
+					'desc'      => $cfg[2],
+					'label_for' => 'pm_' . $key,
+					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
 				)
 			);
 		}
@@ -475,9 +500,11 @@ class Purrfect_Match_Settings {
 				self::PAGE,
 				'pm_section_advanced',
 				array(
-					'key'  => $key,
-					'type' => $cfg[1],
-					'desc' => $cfg[2],
+					'key'       => $key,
+					'type'      => $cfg[1],
+					'desc'      => $cfg[2],
+					'label_for' => 'pm_' . $key,
+					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
 				)
 			);
 		}
@@ -534,15 +561,18 @@ class Purrfect_Match_Settings {
 		$value   = isset( $options[ $key ] ) ? $options[ $key ] : '';
 		$name    = self::OPTION . '[' . $key . ']';
 		$id      = 'pm_' . $key;
+		$desc_id = $id . '_description';
+		$describedby = ! empty( $args['desc'] ) ? ' aria-describedby="' . esc_attr( $desc_id ) . '"' : '';
 
 		switch ( $type ) {
 			case 'checkbox':
 				printf(
-					'<label><input type="checkbox" id="%1$s" name="%2$s" value="1" %3$s /> %4$s</label>',
+					'<label class="pm-toggle"><input type="checkbox" id="%1$s" name="%2$s" value="1" %3$s%5$s /><span class="pm-toggle-track" aria-hidden="true"><span class="pm-toggle-thumb"></span></span><span class="pm-toggle-label">%4$s</span></label>',
 					esc_attr( $id ),
 					esc_attr( $name ),
 					checked( ! empty( $value ), true, false ),
-					esc_html__( 'Enabled', 'purrfect-match' )
+					esc_html__( 'Enabled', 'purrfect-match' ),
+					$describedby // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Attribute is assembled from an escaped internal ID.
 				);
 				break;
 
@@ -550,29 +580,33 @@ class Purrfect_Match_Settings {
 				$min = in_array( $key, array( 'per_page', 'limit' ), true ) ? 0 : 1;
 				$max = ( 'limit' === $key ) ? 1000 : ( ( 'cache_minutes' === $key ) ? 1440 : 100 );
 				printf(
-					'<input type="number" min="' . (int) $min . '" max="' . (int) $max . '" step="1" id="%1$s" name="%2$s" value="%3$s" class="small-text" />',
+					'<input type="number" min="' . (int) $min . '" max="' . (int) $max . '" step="1" id="%1$s" name="%2$s" value="%3$s" class="small-text"%4$s />',
 					esc_attr( $id ),
 					esc_attr( $name ),
-					esc_attr( $value )
+					esc_attr( $value ),
+					$describedby // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Attribute is assembled from an escaped internal ID.
 				);
 				break;
 
 			case 'color':
 				printf(
-					'<input type="text" id="%1$s" name="%2$s" value="%3$s" class="regular-text" placeholder="#e93396" /> <input type="color" value="%4$s" oninput="document.getElementById(\'%1$s\').value=this.value" aria-hidden="true" tabindex="-1" />',
+					'<div class="pm-color-control"><input type="text" id="%1$s" name="%2$s" value="%3$s" class="regular-text pm-color-text" placeholder="#e93396"%5$s /><input type="color" id="%1$s_picker" class="pm-color-picker" value="%4$s" data-color-target="%1$s" aria-label="%6$s" /></div>',
 					esc_attr( $id ),
 					esc_attr( $name ),
 					esc_attr( $value ),
-					esc_attr( preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $value ) ? $value : '#e93396' )
+					esc_attr( preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $value ) ? $value : '#e93396' ),
+					$describedby, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Attribute is assembled from an escaped internal ID.
+					esc_attr__( 'Choose brand color', 'purrfect-match' )
 				);
 				break;
 
 			case 'url':
 				printf(
-					'<input type="url" id="%1$s" name="%2$s" value="%3$s" class="regular-text code" />',
+					'<input type="url" id="%1$s" name="%2$s" value="%3$s" class="regular-text code"%4$s />',
 					esc_attr( $id ),
 					esc_attr( $name ),
-					esc_attr( $value )
+					esc_attr( $value ),
+					$describedby // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Attribute is assembled from an escaped internal ID.
 				);
 				break;
 
@@ -587,7 +621,7 @@ class Purrfect_Match_Settings {
 					'barnyard'         => __( 'Barnyard', 'purrfect-match' ),
 					'scales-fins-other' => __( 'Scales, fins & other', 'purrfect-match' ),
 				);
-				$this->render_select( $id, $name, $choices, $value );
+				$this->render_select( $id, $name, $choices, $value, $describedby );
 				break;
 
 			case 'status':
@@ -596,7 +630,7 @@ class Purrfect_Match_Settings {
 					'adopted'   => __( 'Adopted', 'purrfect-match' ),
 					'found'     => __( 'Found', 'purrfect-match' ),
 				);
-				$this->render_select( $id, $name, $choices, $value );
+				$this->render_select( $id, $name, $choices, $value, $describedby );
 				break;
 
 			case 'columns':
@@ -605,22 +639,23 @@ class Purrfect_Match_Settings {
 					'3' => __( '3 columns', 'purrfect-match' ),
 					'4' => __( '4 columns', 'purrfect-match' ),
 				);
-				$this->render_select( $id, $name, $choices, (string) $value );
+				$this->render_select( $id, $name, $choices, (string) $value, $describedby );
 				break;
 
 			case 'text':
 			default:
 				printf(
-					'<input type="text" id="%1$s" name="%2$s" value="%3$s" class="regular-text" />',
+					'<input type="text" id="%1$s" name="%2$s" value="%3$s" class="regular-text"%4$s />',
 					esc_attr( $id ),
 					esc_attr( $name ),
-					esc_attr( $value )
+					esc_attr( $value ),
+					$describedby // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Attribute is assembled from an escaped internal ID.
 				);
 				break;
 		}
 
 		if ( ! empty( $args['desc'] ) ) {
-			echo '<p class="description">' . esc_html( $args['desc'] ) . '</p>';
+			echo '<p class="description" id="' . esc_attr( $desc_id ) . '">' . esc_html( $args['desc'] ) . '</p>';
 		}
 	}
 
@@ -630,11 +665,17 @@ class Purrfect_Match_Settings {
 	 * @param string $id      Element id.
 	 * @param string $name    Element name.
 	 * @param array  $choices value => label.
-	 * @param string $current Current value.
+	 * @param string $current     Current value.
+	 * @param string $describedby Optional pre-escaped aria-describedby attribute.
 	 * @return void
 	 */
-	protected function render_select( $id, $name, $choices, $current ) {
-		printf( '<select id="%1$s" name="%2$s">', esc_attr( $id ), esc_attr( $name ) );
+	protected function render_select( $id, $name, $choices, $current, $describedby = '' ) {
+		printf(
+			'<select id="%1$s" name="%2$s"%3$s>',
+			esc_attr( $id ),
+			esc_attr( $name ),
+			$describedby // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Attribute is assembled from an escaped internal ID.
+		);
 		foreach ( $choices as $val => $label ) {
 			printf(
 				'<option value="%1$s" %2$s>%3$s</option>',
@@ -666,6 +707,7 @@ class Purrfect_Match_Settings {
 			},
 			$orgs
 		);
+		$orgs = array_filter( $orgs );
 		$out['organization'] = implode( ', ', $orgs );
 
 		// Constrained selects.
@@ -715,9 +757,15 @@ class Purrfect_Match_Settings {
 		$out['api_base']             = esc_url_raw( isset( $input['api_base'] ) ? $input['api_base'] : $defaults['api_base'] );
 		$out['s3_url']               = esc_url_raw( isset( $input['s3_url'] ) ? $input['s3_url'] : $defaults['s3_url'] );
 		$out['petfinder_url']        = esc_url_raw( isset( $input['petfinder_url'] ) ? $input['petfinder_url'] : $defaults['petfinder_url'] );
+		foreach ( array( 'api_base', 's3_url', 'petfinder_url' ) as $endpoint ) {
+			if ( '' === $out[ $endpoint ] ) {
+				$out[ $endpoint ] = $defaults[ $endpoint ];
+			}
+		}
+		$out['s3_url'] = trailingslashit( $out['s3_url'] );
 
 		// Reset the in-process cache so the new values are used immediately.
-		self::$cache = null;
+		self::$cache = array();
 
 		return $out;
 	}
@@ -737,7 +785,8 @@ class Purrfect_Match_Settings {
 		}
 
 		foreach ( (array) $wp_settings_sections[ self::PAGE ] as $section ) {
-			echo '<section class="pm-card-section">';
+			$section_slug = str_replace( 'pm_section_', '', $section['id'] );
+			echo '<section class="pm-card-section pm-card-section--' . esc_attr( sanitize_html_class( $section_slug ) ) . '" id="' . esc_attr( $section['id'] ) . '">';
 
 			if ( ! empty( $section['title'] ) ) {
 				echo '<h2 class="pm-card-section-title">' . esc_html( $section['title'] ) . '</h2>';
@@ -760,6 +809,28 @@ class Purrfect_Match_Settings {
 	}
 
 	/**
+	 * Choose a readable foreground for an arbitrary saved brand color.
+	 *
+	 * @param string $hex Six-digit hexadecimal color.
+	 * @return string
+	 */
+	protected function brand_contrast( $hex ) {
+		$hex = ltrim( (string) $hex, '#' );
+		$r   = hexdec( substr( $hex, 0, 2 ) );
+		$g   = hexdec( substr( $hex, 2, 2 ) );
+		$b   = hexdec( substr( $hex, 4, 2 ) );
+		$linearize = static function ( $channel ) {
+			$value = $channel / 255;
+			return $value <= 0.03928 ? $value / 12.92 : pow( ( $value + 0.055 ) / 1.055, 2.4 );
+		};
+		$luminance      = ( 0.2126 * $linearize( $r ) ) + ( 0.7152 * $linearize( $g ) ) + ( 0.0722 * $linearize( $b ) );
+		$black_contrast = ( $luminance + 0.05 ) / 0.05;
+		$white_contrast = 1.05 / ( $luminance + 0.05 );
+
+		return $black_contrast >= $white_contrast ? '#000000' : '#ffffff';
+	}
+
+	/**
 	 * Render the settings page wrapper.
 	 *
 	 * @return void
@@ -771,18 +842,37 @@ class Purrfect_Match_Settings {
 
 		$options = self::get_options();
 		$brand   = preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $options['brand'] ) ? $options['brand'] : '#e93396';
+		$on_brand = $this->brand_contrast( $brand );
 		$configured = '' !== trim( (string) $options['organization'] );
 		?>
-		<div class="wrap pm-admin" style="--pm-admin-brand: <?php echo esc_attr( $brand ); ?>;">
+		<div class="wrap pm-admin" style="--pm-admin-brand: <?php echo esc_attr( $brand ); ?>; --pm-admin-on-brand: <?php echo esc_attr( $on_brand ); ?>;">
+			<?php settings_errors(); ?>
 
 			<div class="pm-admin-hero">
-				<h1>
-					<span aria-hidden="true">🐾</span>
-					<?php esc_html_e( 'Purrfect Match', 'purrfect-match' ); ?>
-					<span class="pm-ver">v<?php echo esc_html( PURRFECT_MATCH_VERSION ); ?></span>
-				</h1>
-				<p><?php esc_html_e( 'Show your shelter’s adoptable Petfinder pets in a beautiful, filterable grid — no API key required.', 'purrfect-match' ); ?></p>
+				<div class="pm-admin-hero-copy">
+					<span class="pm-admin-eyebrow"><?php esc_html_e( 'Pet adoption toolkit', 'purrfect-match' ); ?></span>
+					<h1>
+						<?php esc_html_e( 'Purrfect Match', 'purrfect-match' ); ?>
+						<span class="pm-ver">v<?php echo esc_html( PURRFECT_MATCH_VERSION ); ?></span>
+					</h1>
+					<p><?php esc_html_e( 'Connect your Petfinder listings, shape the experience, and help every pet make a memorable first impression.', 'purrfect-match' ); ?></p>
+					<div class="pm-admin-hero-actions">
+						<span class="pm-config-status <?php echo $configured ? 'is-ready' : 'is-pending'; ?>">
+							<?php echo $configured ? esc_html__( 'Organization connected', 'purrfect-match' ) : esc_html__( 'Organization ID needed', 'purrfect-match' ); ?>
+						</span>
+						<a class="button" href="<?php echo esc_url( admin_url( 'tools.php?page=' . self::PAGE . '-explorer' ) ); ?>"><?php esc_html_e( 'Open Petfinder Explorer', 'purrfect-match' ); ?></a>
+					</div>
+				</div>
+				<div class="pm-admin-hero-mark" aria-hidden="true">🐾</div>
 			</div>
+
+			<nav class="pm-admin-nav" aria-label="<?php esc_attr_e( 'Settings sections', 'purrfect-match' ); ?>">
+				<a href="#pm_section_listing"><?php esc_html_e( 'Listing', 'purrfect-match' ); ?></a>
+				<a href="#pm_section_appearance"><?php esc_html_e( 'Appearance', 'purrfect-match' ); ?></a>
+				<a href="#pm_section_fallback"><?php esc_html_e( 'Fallbacks', 'purrfect-match' ); ?></a>
+				<a href="#pm_section_performance"><?php esc_html_e( 'Performance', 'purrfect-match' ); ?></a>
+				<a href="#pm_section_advanced"><?php esc_html_e( 'Advanced', 'purrfect-match' ); ?></a>
+			</nav>
 
 			<div class="pm-admin-cols">
 				<div class="pm-admin-main">
@@ -796,12 +886,30 @@ class Purrfect_Match_Settings {
 				</div>
 
 				<aside class="pm-admin-side">
+					<div class="pm-admin-card pm-admin-preview">
+						<div class="pm-admin-card-heading">
+							<h3><?php esc_html_e( 'Style preview', 'purrfect-match' ); ?></h3>
+							<span><?php esc_html_e( 'Live', 'purrfect-match' ); ?></span>
+						</div>
+						<div class="pm-preview-window">
+							<div class="pm-preview-copy">
+								<small data-pm-preview-org><?php echo esc_html( $options['org_name'] ? $options['org_name'] : __( 'Your rescue', 'purrfect-match' ) ); ?></small>
+								<strong data-pm-preview-title><?php echo esc_html( $options['title'] ? $options['title'] : __( 'Find your purr-fect match', 'purrfect-match' ) ); ?></strong>
+							</div>
+							<div class="pm-preview-pet">
+								<div class="pm-preview-photo"><span aria-hidden="true">🐾</span><em><?php esc_html_e( 'Young · Medium', 'purrfect-match' ); ?></em></div>
+								<div class="pm-preview-body"><strong><?php esc_html_e( 'Mochi', 'purrfect-match' ); ?></strong><span><?php esc_html_e( 'Domestic Short Hair', 'purrfect-match' ); ?></span><b><?php esc_html_e( 'Meet Mochi', 'purrfect-match' ); ?></b></div>
+							</div>
+						</div>
+						<p><?php esc_html_e( 'Your saved color and copy update this preview as you type.', 'purrfect-match' ); ?></p>
+					</div>
+
 					<div class="pm-admin-card">
 						<h3><?php esc_html_e( 'Shortcode', 'purrfect-match' ); ?></h3>
 						<p><?php esc_html_e( 'Paste this into any page or post:', 'purrfect-match' ); ?></p>
 						<div class="pm-shortcode">
 							<code>[purrfect_match]</code>
-							<button type="button" class="pm-copy" data-clipboard="[purrfect_match]"><?php esc_html_e( 'Copy', 'purrfect-match' ); ?></button>
+							<button type="button" class="pm-copy" data-clipboard="[purrfect_match]" aria-live="polite"><?php esc_html_e( 'Copy', 'purrfect-match' ); ?></button>
 						</div>
 					</div>
 

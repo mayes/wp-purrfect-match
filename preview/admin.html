@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Purrfect Match — Settings Preview</title>
+	<link rel="stylesheet" href="../assets/css/admin.css">
+	<style>
+		html,body{margin:0;background:#f0f0f1;color:#1d2327;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif} body{padding:0 28px 50px}.wpbar{height:32px;margin:0 -28px 18px;padding:0 28px;display:flex;align-items:center;gap:18px;background:#1d2327;color:#f0f0f1;font-size:13px}.wrap{margin:0 auto}.button{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 12px;border:1px solid #8c8f94;border-radius:4px;background:#f6f7f7;color:#2271b1;text-decoration:none;cursor:pointer}.form-table{width:100%;border-collapse:collapse}.form-table th{text-align:left}.pm-admin{margin:auto;--pm-admin-on-brand:#000}.pm-admin .submit input{cursor:pointer;border:0}.screen-title{max-width:1180px;margin:0 auto 4px;color:#646970;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase}@media(max-width:782px){body{padding:0 12px 30px}.wpbar{margin:0 -12px 12px;padding:0 12px}.form-table th,.form-table td{display:block;width:auto!important;padding:.55rem 0!important}}
+	</style>
+</head>
+<body>
+	<div class="wpbar"><strong>WordPress</strong><span>CJ Paws</span><span>Settings</span><span style="margin-left:auto">Howdy, Andrew</span></div>
+	<div class="screen-title">Settings · Purrfect Match</div>
+	<div class="wrap pm-admin" style="--pm-admin-brand:#e93396;--pm-admin-on-brand:#000000">
+		<div class="pm-admin-hero">
+			<div class="pm-admin-hero-copy"><span class="pm-admin-eyebrow">Pet adoption toolkit</span><h1>Purrfect Match <span class="pm-ver">v1.7.0</span></h1><p>Connect your Petfinder listings, shape the experience, and help every pet make a memorable first impression.</p><div class="pm-admin-hero-actions"><span class="pm-config-status is-ready">Organization connected</span><a class="button" href="#">Open Petfinder Explorer</a></div></div>
+			<div class="pm-admin-hero-mark" aria-hidden="true">🐾</div>
+		</div>
+		<nav class="pm-admin-nav"><a href="#">Listing</a><a href="#">Appearance</a><a href="#">Fallbacks</a><a href="#">Performance</a><a href="#">Advanced</a></nav>
+
+		<div class="pm-admin-cols">
+			<main class="pm-admin-main">
+				<section class="pm-card-section pm-card-section--listing">
+					<h2 class="pm-card-section-title">Listing</h2><div class="pm-card-section-intro"><p>Choose which Petfinder animals appear and how many visitors see at a time.</p></div>
+					<table class="form-table"><tbody>
+						<tr><th><label for="org">Petfinder organization ID(s)</label></th><td><input id="org" type="text" value="FL1629"><p class="description">Your Petfinder display ID or UUID. Separate multiple organizations with commas.</p></td></tr>
+						<tr><th><label for="type">Animal type</label></th><td><select id="type"><option selected>Cats</option><option>Dogs</option><option>Rabbits</option></select><p class="description">Which kind of animal to list.</p></td></tr>
+						<tr><th><label for="status">Adoption status</label></th><td><select id="status"><option selected>Adoptable</option><option>Adopted</option><option>Found</option></select></td></tr>
+						<tr><th><label for="max">Maximum pets to load</label></th><td><input id="max" type="number" value="0"><p class="description">Leave at 0 to always show every adoptable pet.</p></td></tr>
+						<tr><th>Hide breed</th><td><label class="pm-toggle"><input type="checkbox"><span class="pm-toggle-track"><span class="pm-toggle-thumb"></span></span><span class="pm-toggle-label">Show breed names and filter</span></label></td></tr>
+					</tbody></table>
+				</section>
+
+				<section class="pm-card-section pm-card-section--appearance">
+					<h2 class="pm-card-section-title">Appearance</h2><div class="pm-card-section-intro"><p>Set the voice, accent color, and details visitors see on every pet card.</p></div>
+					<table class="form-table"><tbody>
+						<tr><th><label for="heading">Heading</label></th><td><input id="heading" type="text" value="Find your purr-fect match"></td></tr>
+						<tr><th><label for="eyebrow">Eyebrow label</label></th><td><input id="eyebrow" type="text" value="Adoptable Cats"></td></tr>
+						<tr><th><label for="brand">Brand color</label></th><td><div class="pm-color-control"><input class="pm-color-text" id="brand" type="text" value="#e93396"><input class="pm-color-picker" type="color" value="#e93396" aria-label="Choose brand color"></div><p class="description">Button text automatically switches for accessible contrast.</p></td></tr>
+						<tr><th>Pet stories</th><td><label class="pm-toggle"><input type="checkbox" checked><span class="pm-toggle-track"><span class="pm-toggle-thumb"></span></span><span class="pm-toggle-label">Let visitors read each pet’s story</span></label></td></tr>
+						<tr><th>Show location</th><td><label class="pm-toggle"><input type="checkbox" checked><span class="pm-toggle-track"><span class="pm-toggle-thumb"></span></span><span class="pm-toggle-label">Display city and state</span></label></td></tr>
+					</tbody></table>
+				</section>
+				<p class="submit"><input class="button button-primary" type="button" value="Save changes"></p>
+			</main>
+
+			<aside class="pm-admin-side">
+				<div class="pm-admin-card pm-admin-preview"><div class="pm-admin-card-heading"><h3>Style preview</h3><span>Live</span></div><div class="pm-preview-window"><div class="pm-preview-copy"><small>CJ Paws</small><strong>Find your purr-fect match</strong></div><div class="pm-preview-pet"><div class="pm-preview-photo"><span>🐾</span><em>Young · Medium</em></div><div class="pm-preview-body"><strong>Mochi</strong><span>Domestic Short Hair</span><b>Meet Mochi</b></div></div></div><p>Your saved color and copy update this preview as you type.</p></div>
+				<div class="pm-admin-card"><h3>Shortcode</h3><p>Paste this into any page or post:</p><div class="pm-shortcode"><code>[purrfect_match]</code><button type="button" class="pm-copy">Copy</button></div></div>
+				<div class="pm-admin-card"><h3>Getting started</h3><ol class="pm-admin-steps"><li>Organization ID is set ✓</li><li>Adjust the look and filters to taste.</li><li>Add the shortcode to a page.</li></ol></div>
+			</aside>
+		</div>
+	</div>
+</body>
+</html>

@@ -7,8 +7,9 @@
 	'use strict';
 
 	var CFG = window.PM_EXPLORER || {};
-	var DEFAULT_ORG = CFG.org || 'FL1629';
+	var DEFAULT_ORG = CFG.org || '';
 	var DEFAULT_TYPE = CFG.type || 'cat';
+	var requestSerial = 0;
 
 	function $( id ) {
 		return document.getElementById( id );
@@ -16,6 +17,10 @@
 
 	function endpoint() {
 		return ( $( 'pmx-endpoint' ).value || '' ).trim();
+	}
+
+	function organizationIdType( organizationId ) {
+		return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test( organizationId ) ? 'id' : 'display_id';
 	}
 
 	function status( text, cls ) {
@@ -26,6 +31,12 @@
 
 	function out( text ) {
 		$( 'pmx-out' ).textContent = text;
+	}
+
+	function busy( value ) {
+		$( 'pmx-out' ).setAttribute( 'aria-busy', value ? 'true' : 'false' );
+		$( 'pmx-run' ).disabled = !! value;
+		$( 'pmx-discover' ).disabled = !! value;
 	}
 
 	function gql( query, variables ) {
@@ -43,7 +54,7 @@
 	var PRESETS = {
 		org: {
 			q: 'query GetOrganization($organizationId: String!, $idType: String!) {\n  organization(id: $organizationId, idType: $idType) {\n    organizationName displayId organizationId\n  }\n}',
-			v: { organizationId: DEFAULT_ORG, idType: 'display_id' }
+			v: { organizationId: DEFAULT_ORG, idType: organizationIdType( DEFAULT_ORG ) }
 		},
 		search: {
 			q: 'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!) {\n  searchAnimal(pagination: $pagination, sort: { field: "animal_type", order: "desc" }, filters: $filters) {\n    totalCount\n    animals {\n      animalId animalName primaryPhotoId\n      physical { size { label } breed { primary mixed } age { label value } }\n      _contact { address { city state } }\n      publicUrl { url }\n    }\n  }\n}',
@@ -66,9 +77,18 @@
 		}
 		$( 'pmx-query' ).value = p.q;
 		$( 'pmx-vars' ).value = JSON.stringify( p.v, null, 2 );
+		Array.prototype.forEach.call( document.querySelectorAll( '[data-preset]' ), function ( button ) {
+			var selected = button.getAttribute( 'data-preset' ) === key;
+			button.setAttribute( 'aria-pressed', selected ? 'true' : 'false' );
+			button.classList.toggle( 'is-selected', selected );
+		} );
 	}
 
 	function run() {
+		if ( $( 'pmx-run' ).disabled ) {
+			return;
+		}
+		var requestId = ++requestSerial;
 		var vars;
 		try {
 			vars = JSON.parse( $( 'pmx-vars' ).value || '{}' );
@@ -77,8 +97,12 @@
 			return;
 		}
 		status( 'Running…' );
+		busy( true );
 		var t0 = Date.now();
 		gql( $( 'pmx-query' ).value, vars ).then( function ( res ) {
+			if ( requestId !== requestSerial ) {
+				return;
+			}
 			var ms = Date.now() - t0;
 			var pretty;
 			try {
@@ -95,23 +119,39 @@
 			} else {
 				status( 'OK • ' + ms + ' ms', 'ok' );
 			}
+			busy( false );
 		} ).catch( function ( err ) {
+			if ( requestId !== requestSerial ) {
+				return;
+			}
 			status( 'Request failed: ' + err.message, 'err' );
 			out( String( err ) );
+			busy( false );
 		} );
 	}
 
 	// Resolve the org, then probe which extra animal fields exist by removing
 	// the ones GraphQL rejects until the query validates.
 	function discover() {
+		if ( ! DEFAULT_ORG ) {
+			status( 'Configure a Petfinder organization ID first.', 'err' );
+			out( 'Open Settings → Purrfect Match and save your organization ID, then return here.' );
+			return;
+		}
+		var requestId = ++requestSerial;
 		status( 'Resolving organization…' );
-		gql( 'query($id:String!,$t:String!){organization(id:$id,idType:$t){organizationId}}', { id: DEFAULT_ORG, t: 'display_id' } )
+		busy( true );
+		gql( 'query($id:String!,$t:String!){organization(id:$id,idType:$t){organizationId}}', { id: DEFAULT_ORG, t: organizationIdType( DEFAULT_ORG ) } )
 			.then( function ( r ) {
+				if ( requestId !== requestSerial ) {
+					return;
+				}
 				var j = JSON.parse( r.text );
 				var uuid = j && j.data && j.data.organization && j.data.organization.organizationId;
 				if ( ! uuid ) {
 					status( 'Could not resolve org ' + DEFAULT_ORG, 'err' );
 					out( r.text );
+					busy( false );
 					return;
 				}
 				var cand = {
@@ -128,14 +168,21 @@
 				};
 				var tries = 0;
 				function step() {
+					if ( requestId !== requestSerial ) {
+						return;
+					}
 					status( 'Probing fields… (pass ' + ( tries + 1 ) + ')' );
 					gql( build( cand ), vars ).then( function ( rr ) {
+						if ( requestId !== requestSerial ) {
+							return;
+						}
 						var jj;
 						try {
 							jj = JSON.parse( rr.text );
 						} catch ( _e ) {
 							status( 'Unexpected response', 'err' );
 							out( rr.text );
+							busy( false );
 							return;
 						}
 						var errs = jj.errors || [];
@@ -156,20 +203,29 @@
 						var valid = Object.keys( cand );
 						var sample = jj.data && jj.data.searchAnimal && jj.data.searchAnimal.animals && jj.data.searchAnimal.animals[ 0 ];
 						out(
-							'✓ Extra fields that EXIST on each animal:\n  ' + valid.join( ', ' ) +
+							( errs.length ? 'Candidate fields not rejected before validation stopped:' : '✓ Optional fields accepted by the API:' ) + '\n  ' + valid.join( ', ' ) +
 							'\n\nSample animal:\n' + JSON.stringify( sample || jj, null, 2 )
 						);
-						status( errs.length ? 'Done (some fields need arguments — see output)' : 'Done', 'ok' );
+						status( errs.length ? 'Partial result — review the remaining GraphQL errors' : 'Done', errs.length ? 'err' : 'ok' );
+						busy( false );
 					} ).catch( function ( e ) {
+						if ( requestId !== requestSerial ) {
+							return;
+						}
 						status( 'Request failed: ' + e.message, 'err' );
 						out( String( e ) + '\n\nIf this is a CORS error, make sure you are running this from your own site.' );
+						busy( false );
 					} );
 				}
 				step();
 			} )
 			.catch( function ( e ) {
+				if ( requestId !== requestSerial ) {
+					return;
+				}
 				status( 'Request failed: ' + e.message, 'err' );
 				out( String( e ) );
+				busy( false );
 			} );
 	}
 

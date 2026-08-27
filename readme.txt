@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.6.4
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,7 +27,7 @@ organization ID and drop in the shortcode.
 * Shuffle and Clear controls, result count, and loading skeletons.
 * Fully brandable accent color and copy; 2–4 column layouts.
 * Accessible: labelled controls, `aria-live` updates, and reduced-motion support.
-* No API key, no cron, no stored pet data — listings are fetched on demand.
+* No API key or cron; listings load on demand, with optional shared and local caching.
 * SEO-friendly: emits Schema.org structured data (AnimalShelter + a pet ItemList).
 * Card display toggles (location, story, breed, badge) and a flip-to-read pet story.
 
@@ -54,6 +54,7 @@ Override settings per shortcode:
 * `type` — cat, dog, rabbit, small-furry, bird, horse, barnyard, scales-fins-other.
 * `status` — adoptable, adopted, found.
 * `limit` — maximum pets to load (`0` = all; up to 1000).
+* `per_page` — pets revealed in each visible batch (`0` = show all; up to 100).
 * `columns` — desktop columns (2–4).
 * `hide_breed` — true/false; hides the breed name and the breed filter.
 * `adoption_form_url` — link each pet to your application form (adds an "Apply to adopt" button, prefilled with the pet's name and ID).
@@ -86,10 +87,10 @@ Yes. Each `[purrfect_match]` shortcode renders an independent widget.
 
 == Privacy ==
 
-This plugin does not collect, store, or transmit any personal data about your
-visitors. Pet listings are requested directly by the visitor's browser from
-Petfinder; their browser therefore contacts Petfinder's domain to load pet
-data and photos.
+This plugin does not add form, account, or tracking data to Petfinder requests,
+and it includes no plugin analytics. When listing data or photos load directly
+in a visitor's browser, Petfinder and its photo CDN receive ordinary connection
+metadata such as the visitor's IP address, user agent, and request headers.
 
 == External services ==
 
@@ -97,9 +98,10 @@ To show your adoptable pets, this plugin loads listing data and photos **in the
 visitor's browser** from Petfinder's public widget data source:
 
 * Petfinder GraphQL endpoint — `psl.petfinder.com/graphql` — queried with your
-  organization ID and the chosen filters (animal type, status). No personal data
-  about your visitors is sent or collected.
-* Petfinder photo CDN — pet images load directly from Petfinder's image host.
+  organization ID and chosen filters (animal type, status). The plugin does not
+  append form, account, or tracking data to these requests.
+* Petfinder photo CDN — pet images load directly from Petfinder's image host,
+  which receives the ordinary connection metadata described above.
 
 With the optional **Shared cache** setting enabled, a logged-in editor/admin's
 browser refreshes a copy stored on your own site, which visitors then read
@@ -113,6 +115,16 @@ subject to Petfinder's terms and policies:
 * Privacy Policy — https://www.petfinder.com/privacy-policy/
 
 == Changelog ==
+
+= 1.7.0 =
+* New: a calmer, editorial front-end design with a dedicated filter deck, container-aware card layout, consistent 4:3 images, aligned actions, and a responsive two-to-four-column grid.
+* New: contrast-safe brand buttons automatically choose a readable foreground color, including in the live settings preview.
+* Improved: semantic pet articles and headings, one concise results announcement, labelled story disclosures, stronger focus indicators, explicit Load more behavior, and fewer duplicate profile links.
+* Improved: all browser-rendered public-widget copy is translatable through WordPress.
+* Improved: settings now include section navigation, connection status, accessible toggles and color controls, a sticky save action, and a live style preview. The Petfinder Explorer has a focused workbench layout and accessible request status.
+* Refactor: delegated widget actions, reusable state rendering, versioned payload caches, multisite-safe option caching, stricter shortcode validation, and saved-endpoint propagation to Explorer.
+* Fix: failed organization lookups are no longer cached permanently, and bio-enabled widgets no longer reuse story-less cached payloads.
+* Fix: the public stylesheet is detected and loaded early on shortcode pages, with a late-render fallback for dynamic widgets and builders.
 
 = 1.6.4 =
 * Fix: opening a story now crossfades (the card no longer flashes white while the panel fades in).
@@ -172,6 +184,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.7.0 =
+Design and accessibility refresh for the public grid and admin tools, plus fixes for stylesheet timing, retryable organization lookups, and story-aware caching.
 
 = 1.6.4 =
 Polish for the story panel: crossfade open, proper keyboard focus + Escape, no click-through during the close fade, and the hover lift restored.
