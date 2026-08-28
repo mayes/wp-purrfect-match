@@ -26,6 +26,20 @@ $pm_title_id     = $instance_id . '-title';
 $pm_results_id   = $instance_id . '-results-title';
 $pm_description  = empty( $atts['title'] ) ? __( 'Adoptable pets', 'purrfect-match' ) : '';
 $pm_title        = str_replace( '-', '‑', (string) $atts['title'] );
+$pm_show_org_website = ! empty( $pm_org_website );
+
+if ( $pm_show_org_website ) {
+	$pm_org_host  = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( $pm_org_website, PHP_URL_HOST ) ) );
+	$pm_home_host = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ) );
+	$pm_org_path  = untrailingslashit( (string) wp_parse_url( $pm_org_website, PHP_URL_PATH ) );
+	$pm_home_path = untrailingslashit( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) );
+
+	// A link back to the page's own site adds noise without giving visitors a
+	// new destination. Keep it for widgets embedded on a different site.
+	if ( $pm_org_host && $pm_org_host === $pm_home_host && $pm_org_path === $pm_home_path ) {
+		$pm_show_org_website = false;
+	}
+}
 ?>
 <section
 	class="pm-wrap pm-cols-<?php echo (int) $atts['columns']; ?>"
@@ -66,9 +80,9 @@ $pm_title        = str_replace( '-', '‑', (string) $atts['title'] );
 						<p class="pm-subtitle"><?php echo esc_html( $atts['subtitle'] ); ?></p>
 					<?php endif; ?>
 
-					<?php if ( ! empty( $pm_org_website ) || '' !== $pm_org_name ) : ?>
+					<?php if ( $pm_show_org_website || '' !== $pm_org_name ) : ?>
 						<div class="pm-links">
-							<?php if ( ! empty( $pm_org_website ) ) : ?>
+							<?php if ( $pm_show_org_website ) : ?>
 								<a class="pm-link" href="<?php echo esc_url( $pm_org_website ); ?>" target="_blank" rel="noopener noreferrer">
 									<svg class="pm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg>
 									<?php
@@ -120,7 +134,7 @@ $pm_title        = str_replace( '-', '‑', (string) $atts['title'] );
 				</div>
 			</div>
 
-			<div class="pm-filters">
+			<div class="pm-filters pm-filters-<?php echo $pm_hide_breed ? '2' : '3'; ?>">
 				<?php if ( ! $pm_hide_breed ) : ?>
 					<div class="pm-field">
 						<label class="pm-label" for="<?php echo esc_attr( $instance_id ); ?>-breed"><?php esc_html_e( 'Breed', 'purrfect-match' ); ?></label>

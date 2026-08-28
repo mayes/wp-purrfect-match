@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -116,6 +116,12 @@ subject to Petfinder's terms and policies:
 
 == Changelog ==
 
+= 1.7.1 =
+* Improved: host themes can no longer replace the widget's typography, tracking, or adoption-button text colors.
+* Improved: filters stay balanced at medium embed widths, including an even two-column layout when Breed is hidden, while phones retain a compact single-column deck.
+* Improved: organization links are omitted when they only point back to the same site's homepage.
+* Fix: adoption-button hover styling no longer reduces the contrast of its label.
+
 = 1.7.0 =
 * New: a calmer, editorial front-end design with a dedicated filter deck, container-aware card layout, consistent 4:3 images, aligned actions, and a responsive two-to-four-column grid.
 * New: contrast-safe brand buttons automatically choose a readable foreground color, including in the live settings preview.
@@ -184,6 +190,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.7.1 =
+Refines the live-site responsive layout and prevents host themes from reducing widget typography and button contrast.
 
 = 1.7.0 =
 Design and accessibility refresh for the public grid and admin tools, plus fixes for stylesheet timing, retryable organization lookups, and story-aware caching.
