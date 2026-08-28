@@ -7,6 +7,8 @@
 
 $allowed_states = array( 'ready', 'loading', 'empty', 'error', 'story' );
 $state          = isset( $_GET['state'] ) ? preg_replace( '/[^a-z0-9_-]/', '', strtolower( (string) $_GET['state'] ) ) : 'ready';
+$same_site      = ! empty( $_GET['same_site'] );
+$hide_breed     = ! empty( $_GET['hide_breed'] );
 
 if ( ! in_array( $state, $allowed_states, true ) ) {
 	$state = 'ready';
@@ -53,7 +55,7 @@ function preview_state_panel( $icon, $title, $text, $actions = '' ) {
 	</style>
 </head>
 <body>
-	<div class="preview-note">Purrfect Match 1.7 / Public adoption grid / <?php echo htmlspecialchars( $state ); ?></div>
+	<div class="preview-note">Purrfect Match 1.7.1 / Public adoption grid / <?php echo htmlspecialchars( $state ); ?><?php echo $same_site ? ' / same-site embed' : ''; ?><?php echo $hide_breed ? ' / breed hidden' : ''; ?></div>
 	<section class="pm-wrap pm-cols-3" id="pm-preview" style="--pm-brand:#e93396;--pm-brand-rgb:233,51,150;--pm-on-brand:#1b1714;--pm-cols:3" aria-labelledby="pm-preview-title">
 		<div class="pm-shell">
 			<header class="pm-banner">
@@ -64,7 +66,7 @@ function preview_state_panel( $icon, $title, $text, $actions = '' ) {
 						<div class="pm-eyebrow"><svg class="pm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"></path></svg><span>CJ Paws</span><span class="pm-eyebrow-dot" aria-hidden="true"></span><span class="pm-eyebrow-sub">Adoptable cats</span></div>
 						<h2 class="pm-title" id="pm-preview-title">Find your purr‑fect match</h2>
 						<p class="pm-subtitle">Filter by breed, size, and age, then meet the friend who feels like home.</p>
-						<div class="pm-links"><a class="pm-link" href="#"><svg class="pm-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg>Visit cjpaws.org</a><span class="pm-powered pm-sr-only">Powered by CJ Paws</span></div>
+						<div class="pm-links"><?php if ( ! $same_site ) : ?><a class="pm-link" href="#"><svg class="pm-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg>Visit cjpaws.org</a><?php endif; ?><span class="pm-powered pm-sr-only">Powered by CJ Paws</span></div>
 					</div>
 					<div class="pm-hero-mark" aria-hidden="true"><svg viewBox="0 0 120 120"><ellipse cx="60" cy="74" rx="27" ry="22"></ellipse><circle cx="27" cy="47" r="11"></circle><circle cx="49" cy="31" r="11"></circle><circle cx="75" cy="31" r="11"></circle><circle cx="96" cy="49" r="11"></circle></svg></div>
 				</div>
@@ -75,8 +77,8 @@ function preview_state_panel( $icon, $title, $text, $actions = '' ) {
 					<div><h3 class="pm-controls-title">Refine your search</h3><p class="pm-controls-hint">Mix and match filters to find a new friend.</p></div>
 					<div class="pm-actions"><button class="pm-btn" type="button"><?php echo preview_icon( 'shuffle' ); ?>Shuffle</button><button class="pm-btn pm-btn-quiet" type="button" hidden>Reset</button></div>
 				</div>
-				<div class="pm-filters">
-					<div class="pm-field"><label class="pm-label" for="preview-breed">Breed</label><select class="pm-select" id="preview-breed"><option>All breeds</option><option>Domestic Short Hair</option><option>Tabby</option></select></div>
+				<div class="pm-filters pm-filters-<?php echo $hide_breed ? '2' : '3'; ?>">
+					<?php if ( ! $hide_breed ) : ?><div class="pm-field"><label class="pm-label" for="preview-breed">Breed</label><select class="pm-select" id="preview-breed"><option>All breeds</option><option>Domestic Short Hair</option><option>Tabby</option></select></div><?php endif; ?>
 					<div class="pm-field"><label class="pm-label" for="preview-size">Size</label><select class="pm-select" id="preview-size"><option>All sizes</option><option>Small</option><option>Medium</option></select></div>
 					<div class="pm-field"><label class="pm-label" for="preview-age">Age</label><select class="pm-select" id="preview-age"><option>All ages</option><option>Kitten</option><option>Young</option><option>Adult</option></select></div>
 				</div>

@@ -1,6 +1,6 @@
 # Gates: Purrfect Match public design lift
 
-OWNS: GATES.md, .gitattributes, .distignore, tools/verify-public-design.ps1, tools/verify-brand-contrast.php, templates/widget.php, assets/css/purrfect-match.css, assets/js/purrfect-match.js, includes/class-purrfect-match.php, preview/public.php, preview/screenshots/public-*.png
+OWNS: GATES.md, .gitattributes, .distignore, purrfect-match.php, readme.txt, README.md, tools/verify-public-design.ps1, tools/verify-brand-contrast.php, templates/widget.php, assets/css/purrfect-match.css, assets/js/purrfect-match.js, includes/class-purrfect-match.php, preview/admin.html, preview/public.php, preview/screenshots/public-*.png
 
 Scope: Deliver a polished, responsive visitor-facing adoption experience while preserving the WordPress, shortcode, REST, and Petfinder behavior of the existing plugin.
 
@@ -22,3 +22,8 @@ Scope: Deliver a polished, responsive visitor-facing adoption experience while p
 
 - [x] G5: The final diff is confined to the visitor-facing design lift and its review/verification artifacts, with unrelated user changes preserved.
   EVIDENCE: Compared against the recorded dirty-worktree baseline: this pass wrote only OWNS paths. Pre-existing admin, Explorer, documentation, build, settings, bootstrap, and readme changes were left intact. git diff --check passed, and GATES/preview/tools are excluded from release archives.
+
+- [x] G6: The CJPaws integration refinement resists host-theme typography and link-state overrides, removes the redundant same-site link, and keeps the filters balanced at the live page's medium and phone embed widths.
+  CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode design; powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode contracts
+  EXPECT: PUBLIC DESIGN VERIFICATION PASSED; PUBLIC CONTRACT VERIFICATION PASSED
+  EVIDENCE: Browser QA on 2026-08-27 measured a 709px widget with three filter fields on one row and the hidden-Breed variant in two equal columns; a 309px widget remained single-column with no horizontal overflow and the first pet beginning 564px below the widget top. The adoption CTA retained rgb(27, 23, 20) text on rgb(233, 51, 150) at hover with opacity 1. Version 1.7.1 supplies a fresh public-asset cache key. Reviewed public-cjpaws-refined-medium.png and public-cjpaws-refined-mobile.png at original resolution.

@@ -3,7 +3,7 @@
  * Plugin Name:       Purrfect Match
  * Plugin URI:        https://www.andrewmayes.com/
  * Description:       Display your shelter's adoptable pets from Petfinder in a beautiful, filterable grid — "Find your purr-fect match." Listings load live in the visitor's browser, so no API key is required.
- * Version:           1.7.0
+ * Version:           1.7.1
  * Requires at least: 5.6
  * Requires PHP:      7.0
  * Author:            Andrew Mayes
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PURRFECT_MATCH_VERSION', '1.7.0' );
+define( 'PURRFECT_MATCH_VERSION', '1.7.1' );
 define( 'PURRFECT_MATCH_FILE', __FILE__ );
 define( 'PURRFECT_MATCH_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PURRFECT_MATCH_URL', plugin_dir_url( __FILE__ ) );
