@@ -31,7 +31,8 @@ function pm_sort_read( $root, $path ) {
 		pm_sort_fail( 'could not read ' . $path );
 	}
 
-	return $contents;
+	// Keep line-anchored contract checks portable across Git checkout settings.
+	return str_replace( array( "\r\n", "\r" ), "\n", $contents );
 }
 
 function pm_sort_contains( $contents, $needle, $message ) {
