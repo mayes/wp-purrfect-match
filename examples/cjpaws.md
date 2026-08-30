@@ -30,6 +30,18 @@ Go to **Settings → Purrfect Match** and enter:
 
 Then add `[purrfect_match]` to any page or post.
 
+## Compact homepage teaser
+
+Use this shortcode for the four-card homepage teaser. It requests Petfinder's
+most recently published adoptable cats before applying the four-pet limit:
+
+```text
+[purrfect_match limit="4" per_page="4" columns="4" sort="newest"]
+```
+
+Cached results may lag by the configured cache lifetime, so a newly published
+cat may not appear until the current visitor or shared cache expires.
+
 ## Option B — Self-contained shortcode
 
 This renders the CJ Paws widget regardless of the saved settings (handy for a
