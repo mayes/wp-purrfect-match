@@ -3,12 +3,14 @@
  * Standalone visual-review fixture for the public widget.
  *
  * Use ?state=ready, loading, empty, error, or story to review key states.
+ * Add ?teaser=1 for the four-card, four-column newest-first review fixture.
  */
 
 $allowed_states = array( 'ready', 'loading', 'empty', 'error', 'story' );
 $state          = isset( $_GET['state'] ) ? preg_replace( '/[^a-z0-9_-]/', '', strtolower( (string) $_GET['state'] ) ) : 'ready';
 $same_site      = ! empty( $_GET['same_site'] );
 $hide_breed     = ! empty( $_GET['hide_breed'] );
+$teaser         = ! empty( $_GET['teaser'] );
 
 if ( ! in_array( $state, $allowed_states, true ) ) {
 	$state = 'ready';
@@ -22,6 +24,12 @@ $pets = array(
 	array( 'Louie', 'Domestic Long Hair', 'Young', 'Large', 'St. Petersburg, FL', 'https://placecats.com/900/675?position=top&pet=louie' ),
 	array( 'Pepper', 'Tuxedo', 'Adult', 'Medium', 'St. Petersburg, FL', 'https://placecats.com/900/675?position=top&pet=pepper' ),
 );
+
+if ( $teaser ) {
+	$pets = array_slice( $pets, 0, 4 );
+}
+
+$preview_columns = $teaser ? 4 : 3;
 
 function preview_icon( $name ) {
 	$paths = array(
@@ -55,8 +63,8 @@ function preview_state_panel( $icon, $title, $text, $actions = '' ) {
 	</style>
 </head>
 <body>
-	<div class="preview-note">Purrfect Match 1.7.1 / Public adoption grid / <?php echo htmlspecialchars( $state ); ?><?php echo $same_site ? ' / same-site embed' : ''; ?><?php echo $hide_breed ? ' / breed hidden' : ''; ?></div>
-	<section class="pm-wrap pm-cols-3" id="pm-preview" style="--pm-brand:#e93396;--pm-brand-rgb:233,51,150;--pm-on-brand:#1b1714;--pm-cols:3" aria-labelledby="pm-preview-title">
+	<div class="preview-note">Purrfect Match 1.8.0 / Public adoption grid / <?php echo htmlspecialchars( $state ); ?><?php echo $same_site ? ' / same-site embed' : ''; ?><?php echo $hide_breed ? ' / breed hidden' : ''; ?><?php echo $teaser ? ' / newest teaser' : ''; ?></div>
+	<section class="pm-wrap pm-cols-<?php echo $preview_columns; ?>" id="pm-preview" style="--pm-brand:#e93396;--pm-brand-rgb:233,51,150;--pm-on-brand:#1b1714;--pm-cols:<?php echo $preview_columns; ?>" aria-labelledby="pm-preview-title">
 		<div class="pm-shell">
 			<header class="pm-banner">
 				<span class="pm-blob pm-blob-1" aria-hidden="true"></span>
@@ -82,13 +90,13 @@ function preview_state_panel( $icon, $title, $text, $actions = '' ) {
 					<div class="pm-field"><label class="pm-label" for="preview-size">Size</label><select class="pm-select" id="preview-size"><option>All sizes</option><option>Small</option><option>Medium</option></select></div>
 					<div class="pm-field"><label class="pm-label" for="preview-age">Age</label><select class="pm-select" id="preview-age"><option>All ages</option><option>Kitten</option><option>Young</option><option>Adult</option></select></div>
 				</div>
-				<div class="pm-meta"><div class="pm-count<?php echo 'loading' === $state ? ' is-loading' : ''; ?>"><?php if ( 'loading' === $state ) : ?><span class="pm-loading"><span class="pm-paws" aria-hidden="true"><i></i><i></i><i></i></span>Finding adoptable pets...</span><?php elseif ( in_array( $state, array( 'ready', 'story' ), true ) ) : ?><span class="pm-count-pill">Showing 6 adoptable cats</span><?php endif; ?></div><div class="pm-chips"><span class="pm-chip-tip">Choose a filter to narrow the list.</span></div></div>
+				<div class="pm-meta"><div class="pm-count<?php echo 'loading' === $state ? ' is-loading' : ''; ?>"><?php if ( 'loading' === $state ) : ?><span class="pm-loading"><span class="pm-paws" aria-hidden="true"><i></i><i></i><i></i></span>Finding adoptable pets...</span><?php elseif ( in_array( $state, array( 'ready', 'story' ), true ) ) : ?><span class="pm-count-pill">Showing <?php echo count( $pets ); ?> adoptable cats</span><?php endif; ?></div><div class="pm-chips"><span class="pm-chip-tip">Choose a filter to narrow the list.</span></div></div>
 			</section>
 
 			<div class="pm-body">
 				<div class="pm-grid" role="list">
 					<?php if ( 'loading' === $state ) : ?>
-						<?php for ( $i = 0; $i < 6; $i++ ) : ?>
+						<?php for ( $i = 0; $i < count( $pets ); $i++ ) : ?>
 							<div class="pm-skel" role="listitem" aria-hidden="true"><div class="pm-skel-media"></div><div class="pm-skel-body"><div class="pm-skel-line lg"></div><div class="pm-skel-line md"></div><div class="pm-skel-line sm"></div><div class="pm-skel-pill"></div></div></div>
 						<?php endfor; ?>
 					<?php elseif ( 'empty' === $state ) : ?>

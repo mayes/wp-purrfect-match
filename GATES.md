@@ -1,6 +1,6 @@
-# Gates: Purrfect Match public design lift
+# Gates: Purrfect Match release quality
 
-OWNS: GATES.md, .gitattributes, .distignore, purrfect-match.php, readme.txt, README.md, tools/verify-public-design.ps1, tools/verify-brand-contrast.php, templates/widget.php, assets/css/purrfect-match.css, assets/js/purrfect-match.js, includes/class-purrfect-match.php, preview/admin.html, preview/public.php, preview/screenshots/public-*.png
+OWNS: GATES.md, .gitignore, .gitattributes, .distignore, purrfect-match.php, readme.txt, README.md, examples/cjpaws.md, tools/verify-public-design.ps1, tools/verify-brand-contrast.php, tools/verify-newest-sort.ps1, tools/verify-newest-sort.mjs, tools/verify-shortcode-sort.php, tools/verify-release-archive.ps1, templates/widget.php, assets/css/purrfect-match.css, assets/js/purrfect-match.js, includes/class-purrfect-match.php, includes/class-settings.php, includes/class-rest.php, preview/admin.html, preview/public.php, preview/screenshots/public-*.png
 
 Scope: Deliver a polished, responsive visitor-facing adoption experience while preserving the WordPress, shortcode, REST, and Petfinder behavior of the existing plugin.
 
@@ -24,6 +24,37 @@ Scope: Deliver a polished, responsive visitor-facing adoption experience while p
   EVIDENCE: Compared against the recorded dirty-worktree baseline: this pass wrote only OWNS paths. Pre-existing admin, Explorer, documentation, build, settings, bootstrap, and readme changes were left intact. git diff --check passed, and GATES/preview/tools are excluded from release archives.
 
 - [x] G6: The CJPaws integration refinement resists host-theme typography and link-state overrides, removes the redundant same-site link, and keeps the filters balanced at the live page's medium and phone embed widths.
-  CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode design; powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode contracts
-  EXPECT: PUBLIC DESIGN VERIFICATION PASSED; PUBLIC CONTRACT VERIFICATION PASSED
-  EVIDENCE: Browser QA on 2026-08-27 measured a 709px widget with three filter fields on one row and the hidden-Breed variant in two equal columns; a 309px widget remained single-column with no horizontal overflow and the first pet beginning 564px below the widget top. The adoption CTA retained rgb(27, 23, 20) text on rgb(233, 51, 150) at hover with opacity 1. Version 1.7.1 supplies a fresh public-asset cache key. Reviewed public-cjpaws-refined-medium.png and public-cjpaws-refined-mobile.png at original resolution.
+  CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode design && powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode contracts
+  EXPECT: /PUBLIC DESIGN VERIFICATION PASSED[\s\S]*PUBLIC CONTRACT VERIFICATION PASSED/
+  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=1c5f98e14ab6f46142455cc12ce3414d179e78f29a1d2c13909d44d0f944c799; output-bytes=72
+
+- [x] G7: The allow-listed sort contract preserves default ordering, emits newest publication ordering only when requested, falls back safely, applies the limit after ordering, and separates both cache modes.
+  CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-newest-sort.ps1 -Mode all
+  EXPECT: NEWEST SORT CONTRACT VERIFICATION PASSED
+  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=a7bb66852a1ebffd1ca3c65fbb2fd4c9faecff4c95c6fd0ecfec263bda5c5acf; output-bytes=42
+
+- [x] G8: Version 1.8.0 and newest-sort documentation are synchronized across shipped metadata, editor help, and the CJ Paws compact teaser example.
+  CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-newest-sort.ps1 -Mode docs
+  EXPECT: NEWEST SORT DOCUMENTATION VERIFICATION PASSED
+  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=50cd046e230f64d19359eabc75570e664a3915e8b8e4d8a30407bf2ebe1d0c56; output-bytes=47
+
+- [x] G9: Existing WordPress, shortcode, REST, Petfinder, accessibility, schema, privacy, and no-build production contracts remain intact.
+  CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode contracts
+  EXPECT: PUBLIC CONTRACT VERIFICATION PASSED
+  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=c39a45f66e03b4cf1605dfe27a8d65761b09c69a56e5b3b6c6baa069068819c2; output-bytes=37
+
+- [x] G10: Existing visual states, responsive layout, focus treatment, and reduced-motion CSS remain intact.
+  CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode design
+  EXPECT: PUBLIC DESIGN VERIFICATION PASSED
+  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=f056324a2ff3a21a399915524a0e62b4a9f90fcd1fe638839593ba09730164e7; output-bytes=35
+
+- [ ] G11: Desktop and mobile browser QA confirms the four-card newest teaser plus loading, empty, error, retry, filters, stories, application links, schema, keyboard focus, and reduced-motion behavior.
+  EVIDENCE: BLOCKED 2026-08-30 — the PHP 8.4 preview server returned HTTP 200 at `http://127.0.0.1:8798/preview/public.php?teaser=1&same_site=1`, but browser-runtime discovery returned an empty browser list. No current screenshots or viewport assertions were fabricated.
+
+- [ ] G12: The final release archive is version 1.8.0, contains only shipped plugin files, and matches the committed release source.
+  CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-release-archive.ps1 -ExpectedVersion 1.8.0
+  EXPECT: RELEASE ARCHIVE VERIFICATION PASSED
+  EVIDENCE: pending
+
+- [x] G13: The completed work remains local-only, with no push, merge, installation, deployment, or live-site mutation.
+  EVIDENCE: `git ls-remote --heads origin refs/heads/agent/purrfect-match-newest-1.8.0` returned no branch; `origin/main` remains 34138c5bc0ead232fc4b99c2134c1ed1c2fb353c. This workflow issued no push, merge, installation, deployment, or live-site mutation command.

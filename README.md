@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.7.1-e93396" alt="Version 1.7.1">
+  <img src="https://img.shields.io/badge/version-1.8.0-e93396" alt="Version 1.8.0">
   <img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue" alt="License GPL-2.0-or-later">
   <img src="https://img.shields.io/badge/WordPress-5.6%2B-21759b" alt="WordPress 5.6+">
   <img src="https://img.shields.io/badge/PHP-7.0%2B-777bb4" alt="PHP 7.0+">
@@ -60,11 +60,18 @@ With per-instance overrides:
                 title="Find your purr-fect match"]
 ```
 
+For a compact four-card teaser ordered by Petfinder publication time:
+
+```text
+[purrfect_match limit="4" per_page="4" columns="4" sort="newest"]
+```
+
 | Attribute      | Default                      | Description                                              |
 | -------------- | ---------------------------- | ------------------------------------------------------- |
 | `organization` | *(none — required)*          | Petfinder display ID(s) or UUID(s), comma-separated.    |
 | `type`         | `cat`                        | `cat`, `dog`, `rabbit`, `small-furry`, `bird`, `horse`, `barnyard`, `scales-fins-other`. |
 | `status`       | `adoptable`                  | `adoptable`, `adopted`, `found`.                        |
+| `sort`         | `default`                    | `default` preserves the established order; `newest` requests recently published pets first. |
 | `limit`        | `0`                          | Max pets to load (`0` = all; up to 1000).               |
 | `per_page`     | `24`                         | Pets revealed in each visible batch (`0` = show all).   |
 | `columns`      | `3`                          | Desktop columns (2–4).                                  |
@@ -82,6 +89,10 @@ location**, **Show age & size badge**, **Show plugin credit**, **SEO structured
 data**, and an optional **Shared cache**. Advanced settings (`api_base`,
 `s3_url`, `petfinder_url`) match the public Petfinder widget and rarely need
 changing.
+
+Cached results can lag behind Petfinder by the configured cache lifetime. This
+also applies to `sort="newest"`; the plugin orders the available result before
+applying `limit`, but a still-fresh cached result is not refreshed early.
 
 ## ⚙️ How it works
 

@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,11 +48,16 @@ Override settings per shortcode:
 
 `[purrfect_match organization="FL1629" type="cat" status="adoptable" limit="24" columns="3" title="Find your purr-fect match" brand="#e93396" hide_breed="false"]`
 
+Compact four-card teaser ordered by Petfinder publication time:
+
+`[purrfect_match limit="4" per_page="4" columns="4" sort="newest"]`
+
 **Shortcode attributes**
 
 * `organization` — Petfinder display ID(s) or UUID(s), comma-separated.
 * `type` — cat, dog, rabbit, small-furry, bird, horse, barnyard, scales-fins-other.
 * `status` — adoptable, adopted, found.
+* `sort` — `default` preserves the established order; `newest` requests recently published pets first. Invalid values use `default`.
 * `limit` — maximum pets to load (`0` = all; up to 1000).
 * `per_page` — pets revealed in each visible batch (`0` = show all; up to 100).
 * `columns` — desktop columns (2–4).
@@ -63,6 +68,10 @@ Override settings per shortcode:
 * `org_name`, `org_website` — shown in the banner.
 
 Settings also include toggles for **Show pet stories** (flip to read), **Show location**, **Show age & size badge**, and **Show plugin credit**.
+
+Cached results may lag behind Petfinder by the configured cache lifetime,
+including when `sort="newest"` is used. The newest ordering is applied before
+`limit`, so the teaser receives the first four pets from the available result.
 
 == Frequently Asked Questions ==
 
@@ -115,6 +124,12 @@ subject to Petfinder's terms and policies:
 * Privacy Policy — https://www.petfinder.com/privacy-policy/
 
 == Changelog ==
+
+= 1.8.0 =
+* New: shortcode instances can use `sort="newest"` to request recently published pets first, including compact homepage teasers.
+* Compatibility: absent, `default`, and invalid sort values preserve the established Petfinder ordering.
+* Reliability: newest-sort or publication-metadata failures fall back to the proven query instead of failing the widget.
+* Cache: default and newest modes use separate visitor and shared-cache keys.
 
 = 1.7.1 =
 * Improved: host themes can no longer replace the widget's typography, tracking, or adoption-button text colors.
@@ -190,6 +205,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.8.0 =
+Adds an opt-in `sort="newest"` shortcode mode for recently published pets while preserving existing shortcode order by default.
 
 = 1.7.1 =
 Refines the live-site responsive layout and prevents host themes from reducing widget typography and button contrast.

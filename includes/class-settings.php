@@ -160,10 +160,13 @@ class Purrfect_Match_Settings {
 			. '<p>' . $code( '[purrfect_match]' ) . '</p>'
 			. '<p>' . esc_html__( 'With per-instance overrides:', 'purrfect-match' ) . '</p>'
 			. '<p>' . $code( '[purrfect_match type="dog" columns="4" limit="0"]' ) . '</p>'
+			. '<p>' . esc_html__( 'Four-card recently published teaser:', 'purrfect-match' ) . '</p>'
+			. '<p>' . $code( '[purrfect_match limit="4" per_page="4" columns="4" sort="newest"]' ) . '</p>'
 			. '<ul>'
 			. '<li>' . $code( 'organization' ) . ' — ' . esc_html__( 'display ID(s) or UUID(s), comma-separated.', 'purrfect-match' ) . '</li>'
 			. '<li>' . $code( 'type' ) . ' — ' . esc_html__( 'cat, dog, rabbit, small-furry, bird, horse, barnyard, scales-fins-other.', 'purrfect-match' ) . '</li>'
 			. '<li>' . $code( 'status' ) . ' — ' . esc_html__( 'adoptable, adopted, found.', 'purrfect-match' ) . '</li>'
+			. '<li>' . $code( 'sort' ) . ' — ' . esc_html__( 'default keeps the established Petfinder order; newest requests recently published pets first.', 'purrfect-match' ) . '</li>'
 			. '<li>' . $code( 'limit' ) . ' — ' . esc_html__( 'maximum pets to load (0 = all).', 'purrfect-match' ) . '</li>'
 			. '<li>' . $code( 'columns' ) . ' — ' . esc_html__( 'desktop columns (2–4).', 'purrfect-match' ) . '</li>'
 			. '<li>' . $code( 'hide_breed' ) . ', ' . $code( 'adoption_form_url' ) . ', ' . $code( 'title' ) . ', ' . $code( 'brand' ) . ', ' . $code( 'org_name' ) . ', ' . $code( 'org_website' ) . ' — ' . esc_html__( 'per-instance overrides of the matching settings.', 'purrfect-match' ) . '</li>'
@@ -181,6 +184,7 @@ class Purrfect_Match_Settings {
 		$explorer = '<p>' . sprintf( esc_html__( 'Use %s to run live queries against Petfinder from your site and discover the extra fields the API exposes — handy for checking what data is available.', 'purrfect-match' ), '<strong>' . esc_html__( 'Tools → Petfinder Explorer', 'purrfect-match' ) . '</strong>' ) . '</p>';
 
 		$trouble = '<ul>'
+			. '<li>' . esc_html__( 'Newly published pets not appearing? Cached results, including newest-first results, may lag by the configured cache lifetime.', 'purrfect-match' ) . '</li>'
 			. '<li>' . esc_html__( 'No pets showing? Confirm your organization ID is correct and that the organization has adoptable pets.', 'purrfect-match' ) . '</li>'
 			. '<li>' . esc_html__( 'Seeing the “taking a cat nap” message? The live listings could not load — set Fallback links so visitors can still reach your pets.', 'purrfect-match' ) . '</li>'
 			. '<li>' . esc_html__( 'No stories on the cards? Your Petfinder data may not include descriptions; the widget falls back gracefully.', 'purrfect-match' ) . '</li>'

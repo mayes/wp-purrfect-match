@@ -275,6 +275,7 @@ class Purrfect_Match {
 				'organization'         => $options['organization'],
 				'type'                 => $options['type'],
 				'status'               => $options['status'],
+				'sort'                 => 'default',
 				'limit'                => $options['limit'],
 				'per_page'             => $options['per_page'],
 				'columns'              => $options['columns'],
@@ -313,6 +314,11 @@ class Purrfect_Match {
 		if ( ! in_array( $atts['status'], $allowed_status, true ) ) {
 			$atts['status'] = $options['status'];
 		}
+
+		// Sort is intentionally shortcode-only. Convert the caller's value to
+		// one of two internal modes before it reaches the browser/GraphQL layer.
+		$sort         = is_scalar( $atts['sort'] ) ? strtolower( trim( (string) $atts['sort'] ) ) : 'default';
+		$atts['sort'] = in_array( $sort, array( 'default', 'newest' ), true ) ? $sort : 'default';
 
 		$organizations = array_filter( array_map( 'trim', explode( ',', (string) $atts['organization'] ) ) );
 		$organizations = array_map(
@@ -454,6 +460,7 @@ class Purrfect_Match {
 			'organization'      => $orgs,
 			'type'              => sanitize_text_field( $atts['type'] ),
 			'status'            => sanitize_text_field( $atts['status'] ),
+			'sort'              => 'newest' === $atts['sort'] ? 'newest' : 'default',
 			'limit'             => (int) $atts['limit'],
 			'perPage'           => (int) $atts['per_page'],
 			'hideBreed'         => (bool) $atts['hide_breed'],

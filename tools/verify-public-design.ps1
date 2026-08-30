@@ -164,9 +164,10 @@ $headerVersion = [regex]::Match($bootstrap, '(?m)^\s*\*\s+Version:\s+([0-9.]+)\s
 $stableVersion = [regex]::Match($readme, '(?m)^Stable tag:\s*([0-9.]+)\s*$').Groups[1].Value
 $badgeVersion = [regex]::Match($readmeMd, 'version-([0-9.]+)-').Groups[1].Value
 $adminPreviewVersion = [regex]::Match($adminPreview, 'pm-ver">v([0-9.]+)').Groups[1].Value
-$versionMismatch = @($headerVersion, $stableVersion, $badgeVersion, $adminPreviewVersion) | Where-Object { -not $_ -or $_ -ne $constantVersion }
+$publicPreviewVersion = [regex]::Match($preview, 'Purrfect Match\s+([0-9.]+)\s+/\s+Public adoption grid').Groups[1].Value
+$versionMismatch = @($headerVersion, $stableVersion, $badgeVersion, $adminPreviewVersion, $publicPreviewVersion) | Where-Object { -not $_ -or $_ -ne $constantVersion }
 if (-not $constantVersion -or $versionMismatch) {
-	throw "Plugin versions are not synchronized: constant=$constantVersion header=$headerVersion stable=$stableVersion badge=$badgeVersion admin-preview=$adminPreviewVersion"
+	throw "Plugin versions are not synchronized: constant=$constantVersion header=$headerVersion stable=$stableVersion badge=$badgeVersion admin-preview=$adminPreviewVersion public-preview=$publicPreviewVersion"
 }
 
 Assert-Pattern $settings "const\s+OPTION\s*=\s*'purrfect_match_options'" 'option key'

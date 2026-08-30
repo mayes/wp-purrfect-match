@@ -25,17 +25,34 @@
 		'  }' +
 		'}';
 
+	// Shortcode input never reaches GraphQL directly. These two fixed variable
+	// values are the complete public sort allow-list.
+	function normalizeSortMode( value ) {
+		return value === 'newest' ? 'newest' : 'default';
+	}
+
+	function searchSort( mode ) {
+		if ( normalizeSortMode( mode ) === 'newest' ) {
+			return [ { field: 'publish_time', order: 'DESC' } ];
+		}
+		return [ { field: 'animal_type', order: 'desc' } ];
+	}
+
 	// Build the search query. When rich is true, request the optional
 	// `description` field (the pet's "story"); if the endpoint doesn't support
-	// it the caller downgrades to the proven query, so this can't break.
-	function buildSearchQuery( rich ) {
-		return 'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!) {' +
-			'  searchAnimal(pagination: $pagination, sort: { field: "animal_type", order: "desc" }, filters: $filters) {' +
+	// it the caller downgrades to the proven query, so this can't break. Newest
+	// mode requests publication metadata only to support Petfinder's verified
+	// server-side ordering contract; normalized pet records never retain it.
+	function buildSearchQuery( rich, sortMode ) {
+		var newest = normalizeSortMode( sortMode ) === 'newest';
+		return 'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!, $sort: [SortInput!]!) {' +
+			'  searchAnimal(pagination: $pagination, sort: $sort, filters: $filters) {' +
 			'    totalCount' +
 			'    animals {' +
 			'      animalId' +
 			'      animalName' +
 			'      primaryPhotoId' +
+			( newest ? '      meta { publishTime }' : '' ) +
 			( rich ? '      description' : '' ) +
 			'      physical { size { label } breed { primary mixed } age { label value } }' +
 			'      _contact { address { city state } }' +
@@ -227,7 +244,7 @@
 
 	// One page. Parses the body even on a 4xx so an "unknown field" validation
 	// error (which Apollo returns as HTTP 400) can be detected and downgraded.
-	function searchPage( cfg, orgUuids, fromPage, rich ) {
+	function searchPage( cfg, orgUuids, fromPage, rich, sortMode ) {
 		var filters = {
 			animal_type: [ cfg.type ],
 			adoption_status: cfg.status
@@ -238,12 +255,13 @@
 		var variables = {
 			isConsumer: true,
 			filters: filters,
-			pagination: { fromPage: fromPage, pageSize: PAGE_SIZE }
+			pagination: { fromPage: fromPage, pageSize: PAGE_SIZE },
+			sort: searchSort( sortMode )
 		};
 		return fetch( cfg.apiBase, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify( { query: buildSearchQuery( rich ), variables: variables } )
+			body: JSON.stringify( { query: buildSearchQuery( rich, sortMode ), variables: variables } )
 		} ).then( function ( res ) {
 			// Apollo returns the validation error body with HTTP 400, so parse
 			// the JSON regardless of status to detect an unsupported field.
@@ -251,8 +269,10 @@
 				function ( json ) {
 					if ( json && json.errors && json.errors.length ) {
 						var err = new Error( json.errors[ 0 ].message || 'GraphQL error' );
-						if ( /Cannot query field/i.test( JSON.stringify( json.errors ) ) ) {
-							err.unknownField = true;
+						if ( json.errors.some( function ( graphError ) {
+							return graphError && /Cannot query field\s+(?:["']description["']|description\b)/i.test( graphError.message || '' );
+						} ) ) {
+							err.unknownDescription = true;
 						}
 						throw err;
 					}
@@ -272,27 +292,27 @@
 	// Fetch the full set for the org (up to cfg.limit). Page 0 first to learn
 	// totalCount (and whether `description` is supported), then the remaining
 	// pages in parallel — so filters and counts operate on every animal.
-	function fetchAllAnimals( cfg, orgUuids ) {
+	function fetchAnimalsForSort( cfg, orgUuids, sortMode ) {
 		// limit 0 (or unset) = fetch all, bounded by a high safety ceiling.
 		var cap = cfg.limit > 0 ? cfg.limit : 1000;
 		var wantRich = !! cfg.showBios && richState( cfg ) !== 'no';
 
 		function firstPage() {
 			if ( ! wantRich ) {
-				return searchPage( cfg, orgUuids, 0, false ).then( function ( r ) {
+				return searchPage( cfg, orgUuids, 0, false, sortMode ).then( function ( r ) {
 					r._rich = false;
 					return r;
 				} );
 			}
-			return searchPage( cfg, orgUuids, 0, true ).then( function ( r ) {
+			return searchPage( cfg, orgUuids, 0, true, sortMode ).then( function ( r ) {
 				setRichState( cfg, 'yes' );
 				r._rich = true;
 				return r;
 			} ).catch( function ( e ) {
 				// `description` not supported here: remember and use the proven query.
-				if ( e && e.unknownField ) {
+				if ( e && e.unknownDescription ) {
 					setRichState( cfg, 'no' );
-					return searchPage( cfg, orgUuids, 0, false ).then( function ( r ) {
+					return searchPage( cfg, orgUuids, 0, false, sortMode ).then( function ( r ) {
 						r._rich = false;
 						return r;
 					} );
@@ -311,7 +331,7 @@
 			var pages = Math.ceil( total / PAGE_SIZE );
 			var rest = [];
 			for ( var p = 1; p < pages; p++ ) {
-				rest.push( searchPage( cfg, orgUuids, p, useRich ) );
+				rest.push( searchPage( cfg, orgUuids, p, useRich, sortMode ) );
 			}
 			return Promise.all( rest ).then( function ( results ) {
 				results.forEach( function ( r ) {
@@ -319,6 +339,19 @@
 				} );
 				return animals.slice( 0, cap );
 			} );
+		} );
+	}
+
+	// Newest is an additive enhancement. If Petfinder rejects its sort input or
+	// publication metadata (or a later newest page), restart from page zero with
+	// the long-proven default request so the widget still renders current pets.
+	function fetchAllAnimals( cfg, orgUuids ) {
+		var requestedSort = normalizeSortMode( cfg.sort );
+		return fetchAnimalsForSort( cfg, orgUuids, requestedSort ).catch( function ( err ) {
+			if ( requestedSort === 'newest' ) {
+				return fetchAnimalsForSort( cfg, orgUuids, 'default' );
+			}
+			throw err;
 		} );
 	}
 
@@ -368,6 +401,7 @@
 			orgs,
 			cfg.type,
 			cfg.status,
+			normalizeSortMode( cfg.sort ),
 			cfg.limit,
 			cfg.showBios ? 'rich' : 'basic'
 		].join( '|' );
@@ -446,6 +480,7 @@
 		} catch ( e ) {
 			cfg = {};
 		}
+		cfg.sort = normalizeSortMode( cfg.sort );
 
 		var strings = cfg.strings || {};
 		function message( key, fallback, values ) {

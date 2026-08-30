@@ -4,6 +4,7 @@
 
 # Dependencies / tooling
 node_modules/
+.unlazy/
 
 # OS / editor cruft
 .DS_Store
