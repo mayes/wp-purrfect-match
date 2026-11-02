@@ -13,7 +13,7 @@
 
 <p align="center">
   <b>A WordPress plugin that shows your shelter's adoptable Petfinder pets in a beautiful, filterable grid.</b><br>
-  No API key. No cron. Listings load on demand, with optional shared and local caching.
+  No API key. No cron. Listings load on demand and are cached on your site and in the browser.
 </p>
 
 <p align="center">
@@ -31,13 +31,19 @@
 | 📖 **Pet stories (flip card)** | Flip a card to read the pet's description — an accessible disclosure with keyboard focus handling and Escape to close; auto-detected with safe fallback. |
 | 🎚️ **Card display toggles** | Show/hide location, story, breed, and the age/size badge per site. |
 | 💌 **Apply to adopt** | Optional button linking each pet to your application form, prefilled with its name & ID. |
+| 📄 **Load more** | Shows a batch of pets at a time (`per_page`), with a "Load more pets" button for the rest. |
 | 🎨 **Fully brandable** | Your accent color, your copy, 2–4 column layouts. |
 | 📱 **Responsive** | Mobile-first grid that looks great from phone to desktop. |
-| ⚡ **Fast & respectful** | Optional shared cache, no plugin analytics, and no API key to manage. |
+| ⚡ **Fast & respectful** | A shared site cache (on by default) and a short browser cache cut repeat Petfinder calls; no plugin analytics. |
 | 🔎 **SEO & AI ready** | Emits Schema.org JSON-LD (AnimalShelter + pet ItemList) for search engines and AI crawlers. |
-| ♿ **Accessible** | Labelled controls, `aria-live` updates, and reduced-motion support. |
+| ♿ **Accessible** | Labelled controls, `aria-live` updates, managed keyboard focus, theme-proof contrast, RTL-aware controls, and reduced-motion support. |
+| 🧰 **Admin tools** | A settings screen with a live style preview and built-in Help, plus a Petfinder Explorer for checking what data is available. |
 
 ## 🚀 Quick start
+
+**Requirements:** WordPress 5.6+ and PHP 7.0+. Visitors need JavaScript
+enabled to see listings (without it, the widget shows a short message and your
+fallback links).
 
 1. Copy this folder into `wp-content/plugins/purrfect-match/` — or build a ZIP
    (see [below](#-building-a-release-zip)) and upload it via **Plugins → Add New → Upload**.
@@ -87,15 +93,42 @@ For a compact four-card teaser ordered by Petfinder publication time:
 | `adoptapet_url`, `petfinder_member_url` | *(empty)* | Fallback links shown if the live listings can't load. |
 | `api_base`, `s3_url`, `petfinder_url` | Petfinder defaults | Advanced endpoint overrides (rarely needed). |
 
-Settings also include toggles for **Show pet stories** (flip to read), **Show
-location**, **Show age & size badge**, **Show plugin credit**, **SEO structured
-data**, and an optional **Shared cache**. Advanced settings (`api_base`,
-`s3_url`, `petfinder_url`) match the public Petfinder widget and rarely need
-changing.
+Attribute values for `type`, `status`, and `sort` are case-insensitive; an
+unrecognized value falls back to the saved setting (or `default` for `sort`).
 
-Cached results can lag behind Petfinder by the configured cache lifetime. This
-also applies to `sort="newest"`; the plugin orders the available result before
-applying `limit`, but a still-fresh cached result is not refreshed early.
+## 🛠️ Settings & admin tools
+
+- **Settings → Purrfect Match** holds every option, grouped into Listing,
+  Appearance & copy, Fallback links, Performance, and Advanced. A live style
+  preview shows your brand color, heading, and button text color as you type.
+  Card toggles cover **Show pet stories** (flip to read), **Show location**,
+  **Show age & size badge**, and **Show plugin credit**; **SEO structured data**
+  and the **Shared cache** live under Performance.
+- **Help** (top-right tab on the settings screen) has a quick start, every
+  shortcode attribute, a settings reference, and troubleshooting tips.
+- **Tools → Petfinder Explorer** runs live GraphQL queries from your browser so
+  you can see which fields Petfinder returns for your organization.
+- Until an organization ID is saved, administrators see a setup notice in
+  wp-admin.
+
+Advanced settings (`api_base`, `s3_url`, `petfinder_url`) match the public
+Petfinder widget and rarely need changing.
+
+## 🗄️ Caching
+
+| Layer | Where | Lifetime | Who writes it |
+| ----- | ----- | -------- | ------------- |
+| Visitor cache | The visitor's browser (`localStorage`) | 10 minutes | Each visitor's own browser |
+| Shared cache (on by default) | Your site, via the REST route `purrfect-match/v1/pets` | **Cache lifetime** setting (default 120 minutes) | Logged-in users who can edit pages, when they view a page with the widget |
+
+Visitors only ever read the shared cache. When it's empty or expired, their
+browser loads listings from Petfinder directly. Results that aren't what was
+asked for are shown but not cached: a `newest` request that fell back to the
+default order, or a multi-organization list missing one whose lookup failed.
+
+Because of caching, a newly published pet can take up to the cache lifetime to
+appear; this also applies to `sort="newest"`. Lower **Cache lifetime**, or turn
+the shared cache off, if freshness matters more than speed.
 
 ## ⚙️ How it works
 
@@ -117,7 +150,20 @@ repeat calls).
 ## 🛠 Development
 
 This is a standard WordPress plugin with **no build step** — edit the PHP, CSS,
-and JS directly. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+and JS directly. See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and
+the release checklist, and [tools/README.md](tools/README.md) for the
+verification scripts:
+
+```bash
+node tools/verify-newest-sort.mjs          # front-end runtime contracts
+php tools/verify-shortcode-sort.php        # shortcode handling
+php tools/verify-shortcode-sort.php --docs # version numbers agree
+php tools/verify-brand-contrast.php        # brand-color contrast + preview parity
+```
+
+`preview/` holds static design-review pages (`php -S 127.0.0.1:8765` from the
+repo root, then open `/preview/public.php?state=ready`; states are `ready`,
+`loading`, `empty`, `error`, and `story`).
 
 ### 📦 Building a release ZIP
 
@@ -144,8 +190,21 @@ assets/js/admin.js                 Settings screen live preview and copy buttons
 assets/css/explorer.css            Tools → Petfinder Explorer styles.
 assets/js/explorer.js              Tools → Petfinder Explorer query runner.
 uninstall.php                      Removes saved options and cache on delete.
-readme.txt                         WordPress.org-style readme.
+readme.txt                         WordPress.org-style readme and changelog.
+
+Development only (not in the release ZIP):
+bin/build.sh                       Builds dist/purrfect-match.zip.
+tools/                             Verification scripts and a GraphQL playground.
+preview/                           Static design-review pages and screenshots.
+examples/cjpaws.md                 A complete real-world configuration.
+GATES.md                           Quality-gate audit record for 1.8.0.
 ```
+
+## 🧹 Uninstall
+
+Deleting the plugin from **Plugins** removes its saved settings and shared-cache
+data on every site (multisite included). Visitor-cache entries in browsers
+expire on their own.
 
 ## 🔒 Privacy & external services
 
@@ -154,7 +213,9 @@ requests and includes no plugin analytics. To show pets, listing data and
 photos may load **in the visitor's browser** from Petfinder's public widget
 data source (`psl.petfinder.com/graphql`) and photo CDN. Those services receive
 ordinary connection metadata such as IP address, user agent, and request
-headers. See the [readme](readme.txt) "External services" section for details.
+headers. The shared cache stores only public listing data (names, breeds,
+photos, stories, links) on your own site. See the [readme](readme.txt)
+"External services" section for details.
 
 > [!NOTE]
 > Purrfect Match is **not affiliated with, endorsed by, or sponsored by
