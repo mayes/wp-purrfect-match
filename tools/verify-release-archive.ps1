@@ -9,7 +9,17 @@ $ErrorActionPreference = 'Stop'
 
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $zipPath = Join-Path $root 'dist\purrfect-match.zip'
-$git = [IO.Path]::GetFullPath((Join-Path $root '..\.tools\mingit\cmd\git.exe'))
+# Resolve a runtime: an explicit environment override, then the bundled
+# Windows toolchain path, then whatever is on PATH.
+function Resolve-Tool([string]$EnvName, [string]$Bundled, [string]$Command) {
+	$override = [Environment]::GetEnvironmentVariable($EnvName)
+	if ($override) { return $override }
+	if ($Bundled -and (Test-Path -LiteralPath $Bundled -PathType Leaf)) { return $Bundled }
+	$found = Get-Command $Command -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+	if ($found) { return $found.Source }
+	return $Bundled
+}
+$git = Resolve-Tool 'PM_GIT' ([IO.Path]::GetFullPath((Join-Path $root '..\.tools\mingit\cmd\git.exe'))) 'git'
 
 if (-not (Test-Path -LiteralPath $zipPath -PathType Leaf)) {
 	throw "Release archive is missing: $zipPath"

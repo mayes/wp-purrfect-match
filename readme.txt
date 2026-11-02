@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.8.1
+Stable tag: 1.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,7 +24,7 @@ organization ID and drop in the shortcode.
 
 * Responsive grid of adoptable pets with photos, names, breed, size, age, and location.
 * Instant client-side filtering by breed, size, and age, with removable filter chips.
-* Shuffle and Clear controls, result count, and loading skeletons.
+* Shuffle and Reset controls, result count, and loading skeletons.
 * Fully brandable accent color and copy; 2–4 column layouts.
 * Accessible: labelled controls, `aria-live` updates, and reduced-motion support.
 * No API key or cron; listings load on demand, with optional shared and local caching.
@@ -66,6 +66,9 @@ Compact four-card teaser ordered by Petfinder publication time:
 * `title`, `eyebrow`, `subtitle` — heading copy.
 * `brand` — accent color as a hex value (e.g. `#e93396`).
 * `org_name`, `org_website` — shown in the banner.
+* `show_credit` — true/false; shows the small plugin credit in the footer.
+* `adoptapet_url`, `petfinder_member_url` — fallback links shown if the live listings can't load.
+* `api_base`, `s3_url`, `petfinder_url` — advanced endpoint overrides; these match Petfinder's public widget and rarely need changing.
 
 Settings also include toggles for **Show pet stories** (flip to read), **Show location**, **Show age & size badge**, and **Show plugin credit**.
 
@@ -124,6 +127,22 @@ subject to Petfinder's terms and policies:
 * Privacy Policy — https://www.petfinder.com/privacy-policy/
 
 == Changelog ==
+
+= 1.8.2 =
+* Fix: if one of several organizations can't be looked up (a network hiccup), the partial list is shown but no longer cached for everyone under the full set's key.
+* Fix: names and stories served from the shared cache are stored as plain text, so "<3" or "a < b" no longer show up as "&lt;3" or go missing; story paragraph breaks are kept.
+* Fix: opening a pet story moves keyboard focus to its close button again (1.8.1's crossfade left the button hidden for that instant, so focus fell to the page).
+* Fix: keyboard focus stays in the widget after Reset, Clear filters, Try again, and the final Load more.
+* Fix: the redundant photo link is out of the tab order, the pet-name link announces that it opens a new tab, and pet names are now level-4 headings under the results heading.
+* Fix: widget buttons and headings keep their colors when a theme styles `button:hover`/`:focus` or headings.
+* Fix: an adoption form URL with a `#fragment` now receives the pet name and ID.
+* Fix: `type` and `status` shortcode values are matched case-insensitively, like `sort`.
+* Fix: the Explorer re-enables its buttons after a non-JSON org lookup.
+* Improvement: large organizations load later pages four at a time with one retry on network errors, instead of all at once.
+* Improvement: expired and old-format visitor-cache entries are removed from browser storage.
+* Improvement: a no-JavaScript message (with your fallback links) and RTL-aware filter selects.
+* Improvement: default heading copy and the "Mix" breed suffix are translatable; the settings Help lists every shortcode attribute.
+* Dev: build script refuses untracked files and mismatched versions; PowerShell gates find `php`/`node`/`git` on any machine; dead CSS removed.
 
 = 1.8.1 =
 * Fix: the default (non-newest) request is back to the exact production-proven Petfinder query; only `sort="newest"` uses the newer sort variable, and it still falls back safely.
@@ -217,6 +236,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.8.2 =
+Fixes from a full code review: no cached partial listings, plain-text shared cache, better keyboard focus, theme-proof buttons, and gentler loading for large organizations.
 
 = 1.8.1 =
 Fixes from a full code review of 1.7–1.8: safer default Petfinder request, no mis-cached newest fallback, restored story crossfade, and several layout and accessibility fixes.

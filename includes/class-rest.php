@@ -167,25 +167,53 @@ class Purrfect_Match_REST {
 			}
 			// Bios are free text: keep line breaks but cap the length so a long
 			// description (x up to 1000 pets) can't bloat a single transient.
-			$bio     = isset( $cat['bio'] ) ? sanitize_textarea_field( (string) $cat['bio'] ) : '';
-			$bio_len = function_exists( 'mb_strlen' ) ? mb_strlen( $bio ) : strlen( $bio );
-			if ( $bio_len > 600 ) {
-				$bio = function_exists( 'mb_substr' ) ? mb_substr( $bio, 0, 600 ) : substr( $bio, 0, 600 );
-			}
 			$out[] = array(
-				'id'    => isset( $cat['id'] ) ? sanitize_text_field( (string) $cat['id'] ) : '',
-				'name'  => isset( $cat['name'] ) ? sanitize_text_field( (string) $cat['name'] ) : '',
-				'breed' => isset( $cat['breed'] ) ? sanitize_text_field( (string) $cat['breed'] ) : '',
-				'size'  => isset( $cat['size'] ) ? sanitize_text_field( (string) $cat['size'] ) : '',
-				'age'   => isset( $cat['age'] ) ? sanitize_text_field( (string) $cat['age'] ) : '',
-				'bio'   => $bio,
-				'city'  => isset( $cat['city'] ) ? sanitize_text_field( (string) $cat['city'] ) : '',
-				'state' => isset( $cat['state'] ) ? sanitize_text_field( (string) $cat['state'] ) : '',
+				'id'    => $this->plain_text( $cat, 'id', 100 ),
+				'name'  => $this->plain_text( $cat, 'name', 200 ),
+				'breed' => $this->plain_text( $cat, 'breed', 200 ),
+				'size'  => $this->plain_text( $cat, 'size', 100 ),
+				'age'   => $this->plain_text( $cat, 'age', 100 ),
+				'bio'   => $this->plain_text( $cat, 'bio', 600, true ),
+				'city'  => $this->plain_text( $cat, 'city', 200 ),
+				'state' => $this->plain_text( $cat, 'state', 100 ),
 				'photo' => isset( $cat['photo'] ) ? esc_url_raw( (string) $cat['photo'] ) : '',
 				'url'   => isset( $cat['url'] ) ? esc_url_raw( (string) $cat['url'] ) : '',
 			);
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Clean one text field to plain text, as the live Petfinder data is.
+	 *
+	 * The values are only ever rendered by the widget script, which escapes
+	 * every one, so HTML sanitizers would be wrong here: they turn "<3" into
+	 * "&lt;3" (shown literally once escaped) or drop "a < b > c" entirely.
+	 * Instead: valid UTF-8, no control characters, normalized whitespace, and
+	 * a length cap.
+	 *
+	 * @param array  $cat       Raw pet.
+	 * @param string $key       Field name.
+	 * @param int    $max       Maximum length in characters.
+	 * @param bool   $multiline Keep line breaks (bios).
+	 * @return string
+	 */
+	protected function plain_text( $cat, $key, $max, $multiline = false ) {
+		if ( ! isset( $cat[ $key ] ) || ! is_scalar( $cat[ $key ] ) ) {
+			return '';
+		}
+		$value = wp_check_invalid_utf8( (string) $cat[ $key ] );
+		$value = str_replace( array( "\r\n", "\r" ), "\n", $value );
+		$value = (string) preg_replace( '/[\x00-\x09\x0B-\x1F\x7F]/', ' ', $value );
+		$value = (string) preg_replace( $multiline ? '/[^\S\n]+/u' : '/\s+/u', ' ', $value );
+		if ( $multiline ) {
+			$value = (string) preg_replace( array( '/ ?\n ?/', '/\n{3,}/' ), array( "\n", "\n\n" ), $value );
+		}
+		$value = trim( $value );
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $value, 0, $max );
+		}
+		return substr( $value, 0, $max );
 	}
 }

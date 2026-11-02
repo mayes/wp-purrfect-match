@@ -45,7 +45,7 @@ if ( $pm_show_org_website ) {
 	class="pm-wrap pm-cols-<?php echo (int) $atts['columns']; ?>"
 	id="<?php echo esc_attr( $instance_id ); ?>"
 	data-pm-config="<?php echo esc_attr( wp_json_encode( $config ) ); ?>"
-	style="--pm-brand: <?php echo esc_attr( $atts['brand'] ); ?>; --pm-brand-rgb: <?php echo esc_attr( $brand_tokens['rgb'] ); ?>; --pm-on-brand: <?php echo esc_attr( $brand_tokens['contrast'] ); ?>; --pm-cols: <?php echo (int) $atts['columns']; ?>;"
+	style="--pm-brand: <?php echo esc_attr( $atts['brand'] ); ?>; --pm-brand-rgb: <?php echo esc_attr( $brand_tokens['rgb'] ); ?>; --pm-on-brand: <?php echo esc_attr( $brand_tokens['contrast'] ); ?>;"
 	<?php if ( ! empty( $atts['title'] ) ) : ?>aria-labelledby="<?php echo esc_attr( $pm_title_id ); ?>"<?php else : ?>aria-label="<?php echo esc_attr( $pm_description ); ?>"<?php endif; ?>
 >
 	<?php if ( '' !== $pm_schema_ld ) : ?>
@@ -169,6 +169,27 @@ if ( $pm_show_org_website ) {
 		<div class="pm-body">
 			<h3 class="pm-sr-only" id="<?php echo esc_attr( $pm_results_id ); ?>"><?php esc_html_e( 'Adoptable pets', 'purrfect-match' ); ?></h3>
 			<div class="pm-grid" data-pm-grid role="list" aria-labelledby="<?php echo esc_attr( $pm_results_id ); ?>" aria-busy="false"></div>
+			<noscript>
+				<div class="pm-state">
+					<h4 class="pm-state-title"><?php esc_html_e( 'Turn on JavaScript to see our adoptable pets', 'purrfect-match' ); ?></h4>
+					<p class="pm-state-text"><?php esc_html_e( 'The live listings load in your browser.', 'purrfect-match' ); ?></p>
+					<?php
+					$pm_noscript_links = array_filter(
+						array(
+							__( 'View on Petfinder', 'purrfect-match' )   => $atts['petfinder_member_url'],
+							__( 'View on Adopt-a-Pet', 'purrfect-match' ) => $atts['adoptapet_url'],
+						)
+					);
+					?>
+					<?php if ( $pm_noscript_links ) : ?>
+						<div class="pm-state-actions">
+							<?php foreach ( $pm_noscript_links as $pm_link_label => $pm_link_url ) : ?>
+								<a class="pm-btn" href="<?php echo esc_url( $pm_link_url ); ?>"><?php echo esc_html( $pm_link_label ); ?></a>
+							<?php endforeach; ?>
+						</div>
+					<?php endif; ?>
+				</div>
+			</noscript>
 
 			<div class="pm-more" data-pm-more hidden>
 				<button type="button" class="pm-btn pm-btn-brand" data-pm-action="more">
@@ -184,7 +205,7 @@ if ( $pm_show_org_website ) {
 						printf(
 							/* translators: %s: author link. */
 							esc_html__( 'Plugin by %s', 'purrfect-match' ),
-							'<a href="https://www.andrewmayes.com/" target="_blank" rel="noopener noreferrer">Andrew Mayes</a>'
+							'<a href="https://www.andrewmayes.com/" target="_blank" rel="noopener noreferrer">Andrew Mayes<span class="pm-sr-only"> ' . esc_html__( '(opens in a new tab)', 'purrfect-match' ) . '</span></a>'
 						);
 						?>
 					</span>

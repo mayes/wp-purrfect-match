@@ -63,8 +63,8 @@ function preview_state_panel( $icon, $title, $text, $actions = '' ) {
 	</style>
 </head>
 <body>
-	<div class="preview-note">Purrfect Match 1.8.1 / Public adoption grid / <?php echo htmlspecialchars( $state ); ?><?php echo $same_site ? ' / same-site embed' : ''; ?><?php echo $hide_breed ? ' / breed hidden' : ''; ?><?php echo $teaser ? ' / newest teaser' : ''; ?></div>
-	<section class="pm-wrap pm-cols-<?php echo $preview_columns; ?>" id="pm-preview" style="--pm-brand:#e93396;--pm-brand-rgb:233,51,150;--pm-on-brand:#1b1714;--pm-cols:<?php echo $preview_columns; ?>" aria-labelledby="pm-preview-title">
+	<div class="preview-note">Purrfect Match 1.8.2 / Public adoption grid / <?php echo htmlspecialchars( $state ); ?><?php echo $same_site ? ' / same-site embed' : ''; ?><?php echo $hide_breed ? ' / breed hidden' : ''; ?><?php echo $teaser ? ' / newest teaser' : ''; ?></div>
+	<section class="pm-wrap pm-cols-<?php echo $preview_columns; ?>" id="pm-preview" style="--pm-brand:#e93396;--pm-brand-rgb:233,51,150;--pm-on-brand:#1b1714" aria-labelledby="pm-preview-title">
 		<div class="pm-shell">
 			<header class="pm-banner">
 				<span class="pm-blob pm-blob-1" aria-hidden="true"></span>
@@ -108,8 +108,8 @@ function preview_state_panel( $icon, $title, $text, $actions = '' ) {
 							<article class="pm-card pm-card--flip<?php echo 'story' === $state && 0 === $index ? ' is-flipped' : ''; ?>" role="listitem">
 								<div class="pm-card-inner">
 									<div class="pm-card-front">
-										<a class="pm-media-link" href="#"><div class="pm-card-media"><img class="pm-card-img" src="<?php echo htmlspecialchars( $pet[5], ENT_QUOTES ); ?>" alt="Photo of <?php echo htmlspecialchars( $pet[0] ); ?>"><div class="pm-badge"><?php echo htmlspecialchars( $pet[2] . ' / ' . $pet[3] ); ?></div></div></a>
-										<div class="pm-card-body"><div class="pm-card-head"><div><h3 class="pm-name"><a class="pm-name-link" href="#"><?php echo htmlspecialchars( $pet[0] ); ?></a></h3><div class="pm-breed"><?php echo htmlspecialchars( $pet[1] ); ?></div><div class="pm-loc"><?php echo htmlspecialchars( $pet[4] ); ?></div></div><div class="pm-card-mark pm-paw" aria-hidden="true"><?php echo preview_icon( 'paw' ); ?></div></div>
+										<a class="pm-media-link" href="#" tabindex="-1" aria-hidden="true"><div class="pm-card-media"><img class="pm-card-img" src="<?php echo htmlspecialchars( $pet[5], ENT_QUOTES ); ?>" alt="Photo of <?php echo htmlspecialchars( $pet[0] ); ?>"><div class="pm-badge"><?php echo htmlspecialchars( $pet[2] . ' / ' . $pet[3] ); ?></div></div></a>
+										<div class="pm-card-body"><div class="pm-card-head"><div><h4 class="pm-name"><a class="pm-name-link" href="#"><?php echo htmlspecialchars( $pet[0] ); ?></a></h4><div class="pm-breed"><?php echo htmlspecialchars( $pet[1] ); ?></div><div class="pm-loc"><?php echo htmlspecialchars( $pet[4] ); ?></div></div><div class="pm-card-mark pm-paw" aria-hidden="true"><?php echo preview_icon( 'paw' ); ?></div></div>
 											<button class="pm-flip-btn" type="button"><?php echo preview_icon( 'book' ); ?><span>Read story</span></button>
 											<div class="pm-cta-row"><a class="pm-cta pm-cta-adopt" href="#"><?php echo preview_icon( 'mail' ); ?><span>Apply to adopt</span></a><a class="pm-cta-view" href="#">View profile</a></div>
 										</div>

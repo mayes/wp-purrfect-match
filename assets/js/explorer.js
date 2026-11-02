@@ -16,7 +16,7 @@
 	}
 
 	function endpoint() {
-		return ( $( 'pmx-endpoint' ).value || '' ).trim();
+		return ( $( 'pmx-endpoint' ).value || '' ).trim() || CFG.apiBase || '';
 	}
 
 	function organizationIdType( organizationId ) {
@@ -153,6 +153,7 @@
 					// e.g. an HTML block page from the CDN — show it instead of a bare SyntaxError.
 					status( 'Org lookup did not return JSON (HTTP ' + r.statusCode + ')', 'err' );
 					out( r.text );
+					busy( false );
 					return;
 				}
 				var uuid = j && j.data && j.data.organization && j.data.organization.organizationId;

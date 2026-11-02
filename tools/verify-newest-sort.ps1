@@ -8,11 +8,21 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$php = [IO.Path]::GetFullPath((Join-Path $root '..\.tools\php-8.4\php.exe'))
-$node = Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
+# Resolve a runtime: an explicit environment override, then the bundled
+# Windows toolchain path, then whatever is on PATH.
+function Resolve-Tool([string]$EnvName, [string]$Bundled, [string]$Command) {
+	$override = [Environment]::GetEnvironmentVariable($EnvName)
+	if ($override) { return $override }
+	if ($Bundled -and (Test-Path -LiteralPath $Bundled -PathType Leaf)) { return $Bundled }
+	$found = Get-Command $Command -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+	if ($found) { return $found.Source }
+	return $Bundled
+}
+$php = Resolve-Tool 'PM_PHP' ([IO.Path]::GetFullPath((Join-Path $root '..\.tools\php-8.4\php.exe'))) 'php'
+$node = Resolve-Tool 'PM_NODE' $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' } else { '' }) 'node'
 
 foreach ($tool in @($php, $node)) {
-	if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {
+	if (-not $tool -or -not (Test-Path -LiteralPath $tool -PathType Leaf)) {
 		throw "Required verification runtime is missing: $tool"
 	}
 }

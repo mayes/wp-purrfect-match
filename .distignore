@@ -13,3 +13,9 @@
 /dist
 /README.md
 /CONTRIBUTING.md
+# Local clutter that .gitignore keeps out of git archive.
+/node_modules
+/.unlazy
+.DS_Store
+Thumbs.db
+*.zip

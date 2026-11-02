@@ -3,6 +3,21 @@
 Utilities for working on the Purrfect Match plugin. **Nothing here ships with
 the plugin** or runs at request time — these are local/manual aids only.
 
+## Verifiers
+
+Run these from the repository root before a release (PHP 7.0+ and Node 18+):
+
+| Command | Checks |
+| --- | --- |
+| `node tools/verify-newest-sort.mjs` | Front-end runtime contracts: request shapes, sort fallback, caching rules, dedupe, focus handling. |
+| `php tools/verify-shortcode-sort.php` | Shortcode `sort` allow-list and config output. |
+| `php tools/verify-shortcode-sort.php --docs` | Version numbers agree across the plugin header, constant, readme, README, and previews. |
+| `php tools/verify-brand-contrast.php` | Brand-color foreground contrast across arbitrary colors. |
+
+The `*.ps1` gates (Windows PowerShell) wrap the same checks plus design-pattern
+assertions; they find `php`, `node`, and `git` via `PM_PHP` / `PM_NODE` /
+`PM_GIT`, a bundled toolchain, or `PATH`.
+
 ## `petfinder-graphql-explorer.html`
 
 A standalone, dependency-free GraphQL playground for Petfinder's public widget

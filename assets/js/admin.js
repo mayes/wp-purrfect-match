@@ -100,6 +100,7 @@
 			} );
 		}
 
+		// fallback === '' hides the element (an empty heading renders nothing).
 		var bindPreview = function ( fieldId, selector, fallback ) {
 			var field = document.getElementById( fieldId );
 			var target = root.querySelector( selector );
@@ -107,13 +108,15 @@
 				return;
 			}
 			var update = function () {
-				target.textContent = String( field.value || '' ).trim() || fallback;
+				var text = String( field.value || '' ).trim() || fallback;
+				target.textContent = text;
+				target.hidden = ! text;
 			};
 			field.addEventListener( 'input', update );
 			field.addEventListener( 'change', update );
 		};
 
 		bindPreview( 'pm_org_name', '[data-pm-preview-org]', COPY.previewOrg || 'Your rescue' );
-		bindPreview( 'pm_title', '[data-pm-preview-title]', COPY.previewTitle || 'Find your purr-fect match' );
+		bindPreview( 'pm_title', '[data-pm-preview-title]', '' );
 	} );
 }() );

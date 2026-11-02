@@ -45,8 +45,12 @@ Bump the version in lockstep in:
   `PURRFECT_MATCH_VERSION` constant
 - `readme.txt` — `Stable tag:`
 - `README.md` — version badge URL and alt text
+- `preview/admin.html` — the `pm-ver` label (`vX.Y.Z`)
+- `preview/public.php` — the `Purrfect Match X.Y.Z` label
 
-…and add a `== Changelog ==` entry in `readme.txt`.
+…and add matching `== Changelog ==` and `== Upgrade Notice ==` entries in
+`readme.txt`. Check with `php tools/verify-shortcode-sort.php --docs`, and see
+[tools/README.md](tools/README.md) for the other verifiers.
 
 ## Pull requests
 
