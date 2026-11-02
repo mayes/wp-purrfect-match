@@ -146,7 +146,15 @@
 				if ( requestId !== requestSerial ) {
 					return;
 				}
-				var j = JSON.parse( r.text );
+				var j;
+				try {
+					j = JSON.parse( r.text );
+				} catch ( parseError ) {
+					// e.g. an HTML block page from the CDN — show it instead of a bare SyntaxError.
+					status( 'Org lookup did not return JSON (HTTP ' + r.statusCode + ')', 'err' );
+					out( r.text );
+					return;
+				}
 				var uuid = j && j.data && j.data.organization && j.data.organization.organizationId;
 				if ( ! uuid ) {
 					status( 'Could not resolve org ' + DEFAULT_ORG, 'err' );

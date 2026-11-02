@@ -63,7 +63,7 @@ function preview_state_panel( $icon, $title, $text, $actions = '' ) {
 	</style>
 </head>
 <body>
-	<div class="preview-note">Purrfect Match 1.8.0 / Public adoption grid / <?php echo htmlspecialchars( $state ); ?><?php echo $same_site ? ' / same-site embed' : ''; ?><?php echo $hide_breed ? ' / breed hidden' : ''; ?><?php echo $teaser ? ' / newest teaser' : ''; ?></div>
+	<div class="preview-note">Purrfect Match 1.8.1 / Public adoption grid / <?php echo htmlspecialchars( $state ); ?><?php echo $same_site ? ' / same-site embed' : ''; ?><?php echo $hide_breed ? ' / breed hidden' : ''; ?><?php echo $teaser ? ' / newest teaser' : ''; ?></div>
 	<section class="pm-wrap pm-cols-<?php echo $preview_columns; ?>" id="pm-preview" style="--pm-brand:#e93396;--pm-brand-rgb:233,51,150;--pm-on-brand:#1b1714;--pm-cols:<?php echo $preview_columns; ?>" aria-labelledby="pm-preview-title">
 		<div class="pm-shell">
 			<header class="pm-banner">

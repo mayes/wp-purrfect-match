@@ -113,7 +113,7 @@
 			field.addEventListener( 'change', update );
 		};
 
-		bindPreview( 'pm_org_name', '[data-pm-preview-org]', 'Your rescue' );
-		bindPreview( 'pm_title', '[data-pm-preview-title]', 'Find your purr-fect match' );
+		bindPreview( 'pm_org_name', '[data-pm-preview-org]', COPY.previewOrg || 'Your rescue' );
+		bindPreview( 'pm_title', '[data-pm-preview-title]', COPY.previewTitle || 'Find your purr-fect match' );
 	} );
 }() );

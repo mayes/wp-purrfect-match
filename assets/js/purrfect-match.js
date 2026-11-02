@@ -31,11 +31,9 @@
 		return value === 'newest' ? 'newest' : 'default';
 	}
 
-	function searchSort( mode ) {
-		if ( normalizeSortMode( mode ) === 'newest' ) {
-			return [ { field: 'publish_time', order: 'DESC' } ];
-		}
-		return [ { field: 'animal_type', order: 'desc' } ];
+	// Variable value for the newest request (default mode sends no variable).
+	function searchSort() {
+		return [ { field: 'publish_time', order: 'DESC' } ];
 	}
 
 	// Build the search query. When rich is true, request the optional
@@ -43,10 +41,13 @@
 	// it the caller downgrades to the proven query, so this can't break. Newest
 	// mode requests publication metadata only to support Petfinder's verified
 	// server-side ordering contract; normalized pet records never retain it.
+	// Default mode keeps the exact inline sort literal production has always
+	// sent (no variable to type-check). Only the opt-in newest mode binds the
+	// $sort variable, and it falls back to this default request on failure.
 	function buildSearchQuery( rich, sortMode ) {
 		var newest = normalizeSortMode( sortMode ) === 'newest';
-		return 'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!, $sort: [SortInput!]!) {' +
-			'  searchAnimal(pagination: $pagination, sort: $sort, filters: $filters) {' +
+		return 'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!' + ( newest ? ', $sort: [SortInput!]!' : '' ) + ') {' +
+			'  searchAnimal(pagination: $pagination, sort: ' + ( newest ? '$sort' : '{ field: "animal_type", order: "desc" }' ) + ', filters: $filters) {' +
 			'    totalCount' +
 			'    animals {' +
 			'      animalId' +
@@ -255,9 +256,11 @@
 		var variables = {
 			isConsumer: true,
 			filters: filters,
-			pagination: { fromPage: fromPage, pageSize: PAGE_SIZE },
-			sort: searchSort( sortMode )
+			pagination: { fromPage: fromPage, pageSize: PAGE_SIZE }
 		};
+		if ( normalizeSortMode( sortMode ) === 'newest' ) {
+			variables.sort = searchSort( sortMode );
+		}
 		return fetch( cfg.apiBase, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -337,6 +340,21 @@
 				results.forEach( function ( r ) {
 					animals = animals.concat( r.animals );
 				} );
+				// Pages are fetched in parallel after page 0, so a listing
+				// published in between shifts a pet across a page boundary and
+				// returns it twice. Keep the first occurrence of each animal.
+				var seen = {};
+				animals = animals.filter( function ( a ) {
+					var id = a && a.animalId;
+					if ( ! id ) {
+						return true;
+					}
+					if ( seen[ id ] ) {
+						return false;
+					}
+					seen[ id ] = true;
+					return true;
+				} );
 				return animals.slice( 0, cap );
 			} );
 		} );
@@ -345,11 +363,17 @@
 	// Newest is an additive enhancement. If Petfinder rejects its sort input or
 	// publication metadata (or a later newest page), restart from page zero with
 	// the long-proven default request so the widget still renders current pets.
+	// The fallback result is tagged (sortFallback) so the caller never caches
+	// default-ordered pets under the newest cache key — locally or in the shared
+	// server cache — where they would masquerade as newest for the full TTL.
 	function fetchAllAnimals( cfg, orgUuids ) {
 		var requestedSort = normalizeSortMode( cfg.sort );
 		return fetchAnimalsForSort( cfg, orgUuids, requestedSort ).catch( function ( err ) {
 			if ( requestedSort === 'newest' ) {
-				return fetchAnimalsForSort( cfg, orgUuids, 'default' );
+				return fetchAnimalsForSort( cfg, orgUuids, 'default' ).then( function ( animals ) {
+					animals.sortFallback = true;
+					return animals;
+				} );
 			}
 			throw err;
 		} );
@@ -1012,9 +1036,13 @@
 				var list = animals.map( function ( a ) {
 					return normalize( a, cfg );
 				} );
-				writeCache( cfg, list );
-				if ( cfg.serverCache && cfg.canWrite && cfg.restUrl && list.length ) {
-					serverPut( cfg, list );
+				// A newest→default fallback isn't what this cache key promises;
+				// show it, but let the next view retry the requested order.
+				if ( ! animals.sortFallback ) {
+					writeCache( cfg, list );
+					if ( cfg.serverCache && cfg.canWrite && cfg.restUrl && list.length ) {
+						serverPut( cfg, list );
+					}
 				}
 				useCats( list );
 			} ).catch( function ( err ) {
@@ -1101,7 +1129,14 @@
 			if ( ! cardEl ) {
 				return;
 			}
-			var flipped = cardEl.classList.toggle( 'is-flipped' );
+			// Honor the button's role rather than blindly toggling, so an
+			// auto-repeated Enter on "Read story" (focus jumps to ✕) can't
+			// close-then-reopen the panel.
+			var flipped = btn.getAttribute( 'data-pm-flip' ) === 'open';
+			if ( flipped === cardEl.classList.contains( 'is-flipped' ) ) {
+				return;
+			}
+			cardEl.classList.toggle( 'is-flipped', flipped );
 			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
 			var story = cardEl.querySelector( '[data-pm-story]' );
 			if ( opener ) {

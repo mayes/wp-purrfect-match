@@ -850,7 +850,7 @@ class Purrfect_Match_Settings {
 		$configured = '' !== trim( (string) $options['organization'] );
 		?>
 		<div class="wrap pm-admin" style="--pm-admin-brand: <?php echo esc_attr( $brand ); ?>; --pm-admin-on-brand: <?php echo esc_attr( $on_brand ); ?>;">
-			<?php settings_errors(); ?>
+			<?php // Settings notices are printed by WordPress for Settings-menu pages (options-head.php); calling settings_errors() here would duplicate them. ?>
 
 			<div class="pm-admin-hero">
 				<div class="pm-admin-hero-copy">

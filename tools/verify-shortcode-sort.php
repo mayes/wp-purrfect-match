@@ -49,17 +49,23 @@ if ( $docs_mode ) {
 	$public       = pm_sort_read( $root, 'preview/public.php' );
 	$teaser       = '[purrfect_match limit="4" per_page="4" columns="4" sort="newest"]';
 
-	pm_sort_assert( 1 === preg_match( '/^ \* Version:\s+1\.8\.0$/m', $bootstrap ), 'plugin header is not 1.8.0' );
-	pm_sort_contains( $bootstrap, "define( 'PURRFECT_MATCH_VERSION', '1.8.0' );", 'runtime constant is not 1.8.0' );
-	pm_sort_assert( 1 === preg_match( '/^Stable tag:\s*1\.8\.0$/m', $readme ), 'stable tag is not 1.8.0' );
-	pm_sort_contains( $readme_md, 'version-1.8.0-e93396', 'README badge is not 1.8.0' );
-	pm_sort_contains( $readme_md, 'alt="Version 1.8.0"', 'README badge alt text is not 1.8.0' );
-	pm_sort_contains( $admin, 'pm-ver">v1.8.0', 'admin preview is not 1.8.0' );
-	pm_sort_contains( $public, 'Purrfect Match 1.8.0', 'public preview is not 1.8.0' );
-	pm_sort_assert( 2 === substr_count( $readme, '= 1.8.0 =' ), '1.8.0 must have both changelog and upgrade-notice entries' );
+	// Every version reference must agree with the plugin header, the release
+	// must be 1.8.0 or later (sorting shipped in 1.8.0), and the current
+	// version needs both a changelog and an upgrade-notice entry.
+	pm_sort_assert( 1 === preg_match( '/^ \* Version:\s+(\d+\.\d+\.\d+)$/m', $bootstrap, $version_match ), 'plugin header version is missing' );
+	$version = $version_match[1];
+	pm_sort_assert( version_compare( $version, '1.8.0', '>=' ), 'plugin version predates newest sorting (1.8.0)' );
+	pm_sort_contains( $bootstrap, "define( 'PURRFECT_MATCH_VERSION', '" . $version . "' );", 'runtime constant does not match the plugin header' );
+	pm_sort_assert( 1 === preg_match( '/^Stable tag:\s*' . preg_quote( $version, '/' ) . '$/m', $readme ), 'stable tag does not match the plugin header' );
+	pm_sort_contains( $readme_md, 'version-' . $version . '-e93396', 'README badge does not match the plugin header' );
+	pm_sort_contains( $readme_md, 'alt="Version ' . $version . '"', 'README badge alt text does not match the plugin header' );
+	pm_sort_contains( $admin, 'pm-ver">v' . $version, 'admin preview version does not match the plugin header' );
+	pm_sort_contains( $public, 'Purrfect Match ' . $version, 'public preview version does not match the plugin header' );
+	pm_sort_assert( 2 === substr_count( $readme, '= ' . $version . ' =' ), $version . ' must have both changelog and upgrade-notice entries' );
 	$upgrade_notice = strstr( $readme, '== Upgrade Notice ==' );
 	pm_sort_assert( false !== $upgrade_notice, 'upgrade notice section is missing' );
-	pm_sort_contains( $upgrade_notice, '= 1.8.0 =', '1.8.0 upgrade notice is missing' );
+	pm_sort_contains( $upgrade_notice, '= ' . $version . ' =', $version . ' upgrade notice is missing' );
+	pm_sort_contains( $upgrade_notice, '= 1.8.0 =', '1.8.0 upgrade notice (newest sorting) is missing' );
 
 	foreach ( array( 'README.md' => $readme_md, 'readme.txt' => $readme, 'Settings help' => $settings, 'CJ Paws example' => $cjpaws ) as $label => $contents ) {
 		pm_sort_contains( $contents, $teaser, $label . ' is missing the exact four-card teaser' );
