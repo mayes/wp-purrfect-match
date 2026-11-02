@@ -22,7 +22,7 @@ $php = Resolve-Tool 'PM_PHP' ([IO.Path]::GetFullPath((Join-Path $root '..\.tools
 $node = Resolve-Tool 'PM_NODE' $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' } else { '' }) 'node'
 
 foreach ($tool in @($php, $node)) {
-	if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {
+	if (-not $tool -or -not (Test-Path -LiteralPath $tool -PathType Leaf)) {
 		throw "Required verification runtime is missing: $tool"
 	}
 }

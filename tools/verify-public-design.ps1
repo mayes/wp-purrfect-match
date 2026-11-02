@@ -114,7 +114,7 @@ $node = Resolve-Tool 'PM_NODE' $(if ($env:USERPROFILE) { Join-Path $env:USERPROF
 $git = Resolve-Tool 'PM_GIT' ([IO.Path]::GetFullPath((Join-Path $root '..\.tools\mingit\cmd\git.exe'))) 'git'
 
 foreach ($tool in @($php, $node, $git)) {
-	if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {
+	if (-not $tool -or -not (Test-Path -LiteralPath $tool -PathType Leaf)) {
 		throw "Required verification runtime is missing: $tool"
 	}
 }

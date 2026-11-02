@@ -21,7 +21,7 @@ fi
 
 # The three version strings must agree, or WordPress shows one version while
 # the readme advertises another.
-VERSION="$(git show HEAD:readme.txt | grep -m1 'Stable tag:' | sed 's/.*:[[:space:]]*//' | tr -d '[:space:]')"
+VERSION="$(git show HEAD:readme.txt | { grep -m1 'Stable tag:' || true; } | sed 's/.*:[[:space:]]*//' | tr -d '[:space:]')"
 HEADER_VERSION="$(git show HEAD:purrfect-match.php | sed -n 's/^ \* Version:[[:space:]]*//p' | head -n1 | tr -d '[:space:]')"
 CONST_VERSION="$(git show HEAD:purrfect-match.php | sed -n "s/.*PURRFECT_MATCH_VERSION', '\([^']*\)'.*/\1/p" | head -n1)"
 if [ -z "$VERSION" ] || [ "$VERSION" != "$HEADER_VERSION" ] || [ "$VERSION" != "$CONST_VERSION" ]; then
