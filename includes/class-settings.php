@@ -316,7 +316,7 @@ class Purrfect_Match_Settings {
 		$organizations = self::parse_organizations( $options['organization'] );
 		$explorer_org  = $organizations ? $organizations[0] : '';
 		$brand         = preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $options['brand'] ) ? $options['brand'] : '#e93396';
-		$on_brand      = $this->brand_contrast( $brand );
+		$on_brand      = self::brand_tokens( $brand )['contrast'];
 		?>
 		<div class="wrap pm-explorer" style="--pmx-brand: <?php echo esc_attr( $brand ); ?>; --pmx-on-brand: <?php echo esc_attr( $on_brand ); ?>;">
 			<header class="pmx-hero">
@@ -788,25 +788,65 @@ class Purrfect_Match_Settings {
 	}
 
 	/**
-	 * Choose a readable foreground for an arbitrary saved brand color.
+	 * Foreground colors tried on the brand color, in order: the preferred
+	 * near-black/near-white pair, then near-pure endpoints used only if the
+	 * pair can't reach WCAG AA (4.5:1) on a mid-tone brand. Shared with the
+	 * settings screen's live preview (admin.js) via PM_ADMIN.onBrand.
+	 */
+	const ON_BRAND_CANDIDATES = array(
+		'primary'  => array( '#1b1714', '#fffdf9' ),
+		'fallback' => array( '#050403', '#fffefa' ),
+	);
+
+	/**
+	 * Derive CSS-ready brand tokens: RGB channels and the most readable
+	 * foreground from ON_BRAND_CANDIDATES. Used by the widget, the settings
+	 * screen, and the Explorer so all three agree.
 	 *
 	 * @param string $hex Six-digit hexadecimal color.
-	 * @return string
+	 * @return array { rgb: "r, g, b", contrast: "#rrggbb" }
 	 */
-	protected function brand_contrast( $hex ) {
-		$hex = ltrim( (string) $hex, '#' );
-		$r   = hexdec( substr( $hex, 0, 2 ) );
-		$g   = hexdec( substr( $hex, 2, 2 ) );
-		$b   = hexdec( substr( $hex, 4, 2 ) );
-		$linearize = static function ( $channel ) {
-			$value = $channel / 255;
-			return $value <= 0.03928 ? $value / 12.92 : pow( ( $value + 0.055 ) / 1.055, 2.4 );
+	public static function brand_tokens( $hex ) {
+		$channels = static function ( $color ) {
+			$color = ltrim( (string) $color, '#' );
+			return array( hexdec( substr( $color, 0, 2 ) ), hexdec( substr( $color, 2, 2 ) ), hexdec( substr( $color, 4, 2 ) ) );
 		};
-		$luminance      = ( 0.2126 * $linearize( $r ) ) + ( 0.7152 * $linearize( $g ) ) + ( 0.0722 * $linearize( $b ) );
-		$black_contrast = ( $luminance + 0.05 ) / 0.05;
-		$white_contrast = 1.05 / ( $luminance + 0.05 );
+		$luminance = static function ( $color ) use ( $channels ) {
+			$sum     = 0;
+			$weights = array( 0.2126, 0.7152, 0.0722 );
+			foreach ( $channels( $color ) as $i => $channel ) {
+				$value = $channel / 255;
+				$sum  += $weights[ $i ] * ( $value <= 0.03928 ? $value / 12.92 : pow( ( $value + 0.055 ) / 1.055, 2.4 ) );
+			}
+			return $sum;
+		};
 
-		return $black_contrast >= $white_contrast ? '#000000' : '#ffffff';
+		$rgb        = $channels( $hex );
+		$brand      = $luminance( $hex );
+		$candidates = self::ON_BRAND_CANDIDATES;
+		$contrast   = $candidates['primary'][0];
+		$best_ratio = 0;
+
+		foreach ( array( 'primary', 'fallback' ) as $tier ) {
+			// Near the WCAG crossover, try the near-pure endpoints so arbitrary
+			// organization colors still reach AA.
+			if ( 'fallback' === $tier && $best_ratio >= 4.5 ) {
+				break;
+			}
+			foreach ( $candidates[ $tier ] as $candidate ) {
+				$other = $luminance( $candidate );
+				$ratio = ( max( $brand, $other ) + 0.05 ) / ( min( $brand, $other ) + 0.05 );
+				if ( $ratio > $best_ratio ) {
+					$contrast   = $candidate;
+					$best_ratio = $ratio;
+				}
+			}
+		}
+
+		return array(
+			'rgb'      => $rgb[0] . ', ' . $rgb[1] . ', ' . $rgb[2],
+			'contrast' => $contrast,
+		);
 	}
 
 	/**
@@ -821,7 +861,7 @@ class Purrfect_Match_Settings {
 
 		$options = self::get_options();
 		$brand   = preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $options['brand'] ) ? $options['brand'] : '#e93396';
-		$on_brand = $this->brand_contrast( $brand );
+		$on_brand = self::brand_tokens( $brand )['contrast'];
 		$configured = '' !== trim( (string) $options['organization'] );
 		?>
 		<div class="wrap pm-admin" style="--pm-admin-brand: <?php echo esc_attr( $brand ); ?>; --pm-admin-on-brand: <?php echo esc_attr( $on_brand ); ?>;">

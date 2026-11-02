@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.8.2
+Stable tag: 1.8.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -128,6 +128,10 @@ subject to Petfinder's terms and policies:
 
 == Changelog ==
 
+= 1.8.3 =
+* Fix: the settings screen preview and the Petfinder Explorer now pick the same readable text color on your brand color as the live widget (one shared calculation instead of three).
+* Dev: the brand-contrast verifier checks the settings preview against the widget for 4,096 colors.
+
 = 1.8.2 =
 * Fix: if one of several organizations can't be looked up (a network hiccup), the partial list is shown but no longer cached for everyone under the full set's key.
 * Fix: names and stories served from the shared cache are stored as plain text, so "<3" or "a < b" no longer show up as "&lt;3" or go missing; story paragraph breaks are kept.
@@ -236,6 +240,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.8.3 =
+The settings preview now shows exactly the button text color your visitors will see.
 
 = 1.8.2 =
 Fixes from a full code review: no cached partial listings, plain-text shared cache, better keyboard focus, theme-proof buttons, and gentler loading for large organizations.

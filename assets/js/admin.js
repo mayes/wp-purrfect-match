@@ -65,18 +65,36 @@
 
 		var brandField = document.getElementById( 'pm_brand' );
 		var brandPicker = document.querySelector( '[data-color-target="pm_brand"]' );
+		// Mirrors Purrfect_Match_Settings::brand_tokens(): best WCAG ratio among
+		// the primary candidates, then the fallback pair only if still < 4.5.
+		var ON_BRAND = COPY.onBrand || { primary: [ '#1b1714', '#fffdf9' ], fallback: [ '#050403', '#fffefa' ] };
+		var luminanceOf = function ( color ) {
+			var weights = [ 0.2126, 0.7152, 0.0722 ];
+			var sum = 0;
+			for ( var i = 0; i < 3; i++ ) {
+				var value = parseInt( color.slice( 1 + ( i * 2 ), 3 + ( i * 2 ) ), 16 ) / 255;
+				sum += weights[ i ] * ( value <= 0.03928 ? value / 12.92 : Math.pow( ( value + 0.055 ) / 1.055, 2.4 ) );
+			}
+			return sum;
+		};
 		var contrastFor = function ( color ) {
-			var r = parseInt( color.slice( 1, 3 ), 16 );
-			var g = parseInt( color.slice( 3, 5 ), 16 );
-			var b = parseInt( color.slice( 5, 7 ), 16 );
-			var linearize = function ( channel ) {
-				var value = channel / 255;
-				return value <= 0.03928 ? value / 12.92 : Math.pow( ( value + 0.055 ) / 1.055, 2.4 );
-			};
-			var luminance = ( 0.2126 * linearize( r ) ) + ( 0.7152 * linearize( g ) ) + ( 0.0722 * linearize( b ) );
-			var blackContrast = ( luminance + 0.05 ) / 0.05;
-			var whiteContrast = 1.05 / ( luminance + 0.05 );
-			return blackContrast >= whiteContrast ? '#000000' : '#ffffff';
+			var brand = luminanceOf( color );
+			var best = ON_BRAND.primary[ 0 ];
+			var bestRatio = 0;
+			[ 'primary', 'fallback' ].forEach( function ( tier ) {
+				if ( tier === 'fallback' && bestRatio >= 4.5 ) {
+					return;
+				}
+				ON_BRAND[ tier ].forEach( function ( candidate ) {
+					var other = luminanceOf( candidate );
+					var ratio = ( Math.max( brand, other ) + 0.05 ) / ( Math.min( brand, other ) + 0.05 );
+					if ( ratio > bestRatio ) {
+						best = candidate;
+						bestRatio = ratio;
+					}
+				} );
+			} );
+			return best;
 		};
 		var applyBrand = function ( value ) {
 			var color = String( value || '' ).trim();
