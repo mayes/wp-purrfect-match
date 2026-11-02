@@ -119,6 +119,9 @@ class Purrfect_Match {
 					'copied'       => __( 'Copied!', 'purrfect-match' ),
 					'copyFailed'   => __( 'Copy failed', 'purrfect-match' ),
 					'previewOrg'   => __( 'Your rescue', 'purrfect-match' ),
+					// Same foreground candidates the widget uses, so the live
+					// preview picks the color visitors will actually see.
+					'onBrand'      => Purrfect_Match_Settings::ON_BRAND_CANDIDATES,
 				)
 			);
 			return;
@@ -334,58 +337,7 @@ class Purrfect_Match {
 	 * @return array RGB channels and a contrast-safe foreground.
 	 */
 	protected function brand_tokens( $hex ) {
-		$hex = ltrim( (string) $hex, '#' );
-		$r   = hexdec( substr( $hex, 0, 2 ) );
-		$g   = hexdec( substr( $hex, 2, 2 ) );
-		$b   = hexdec( substr( $hex, 4, 2 ) );
-
-		$linearize = static function ( $channel ) {
-			$value = $channel / 255;
-			return $value <= 0.03928 ? $value / 12.92 : pow( ( $value + 0.055 ) / 1.055, 2.4 );
-		};
-		$luminance = ( 0.2126 * $linearize( $r ) ) + ( 0.7152 * $linearize( $g ) ) + ( 0.0722 * $linearize( $b ) );
-
-		$contrast_ratio = static function ( $first, $second ) {
-			$lighter = max( $first, $second );
-			$darker  = min( $first, $second );
-			return ( $lighter + 0.05 ) / ( $darker + 0.05 );
-		};
-
-		$candidates = array(
-			'#1b1714' => ( 0.2126 * $linearize( 27 ) ) + ( 0.7152 * $linearize( 23 ) ) + ( 0.0722 * $linearize( 20 ) ),
-			'#fffdf9' => ( 0.2126 * $linearize( 255 ) ) + ( 0.7152 * $linearize( 253 ) ) + ( 0.0722 * $linearize( 249 ) ),
-		);
-		$contrast   = '#1b1714';
-		$best_ratio = 0;
-
-		foreach ( $candidates as $candidate => $candidate_luminance ) {
-			$ratio = $contrast_ratio( $luminance, $candidate_luminance );
-			if ( $ratio > $best_ratio ) {
-				$contrast   = $candidate;
-				$best_ratio = $ratio;
-			}
-		}
-
-		// Near the WCAG crossover point, use almost-black/almost-white rather
-		// than pure endpoints so arbitrary organization colors still reach AA.
-		if ( $best_ratio < 4.5 ) {
-			$fallbacks = array(
-				'#050403' => ( 0.2126 * $linearize( 5 ) ) + ( 0.7152 * $linearize( 4 ) ) + ( 0.0722 * $linearize( 3 ) ),
-				'#fffefa' => ( 0.2126 * $linearize( 255 ) ) + ( 0.7152 * $linearize( 254 ) ) + ( 0.0722 * $linearize( 250 ) ),
-			);
-			foreach ( $fallbacks as $candidate => $candidate_luminance ) {
-				$ratio = $contrast_ratio( $luminance, $candidate_luminance );
-				if ( $ratio > $best_ratio ) {
-					$contrast   = $candidate;
-					$best_ratio = $ratio;
-				}
-			}
-		}
-
-		return array(
-			'rgb'      => $r . ', ' . $g . ', ' . $b,
-			'contrast' => $contrast,
-		);
+		return Purrfect_Match_Settings::brand_tokens( $hex );
 	}
 
 	/**
