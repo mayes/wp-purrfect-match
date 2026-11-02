@@ -24,12 +24,14 @@ organization ID and drop in the shortcode.
 
 * Responsive grid of adoptable pets with photos, names, breed, size, age, and location.
 * Instant client-side filtering by breed, size, and age, with removable filter chips.
-* Shuffle and Reset controls, result count, and loading skeletons.
+* Shuffle and Reset controls, result count, loading skeletons, and a "Load more" button.
+* Optional "Apply to adopt" button linking each pet to your adoption form, prefilled with its name and ID.
 * Fully brandable accent color and copy; 2–4 column layouts.
-* Accessible: labelled controls, `aria-live` updates, and reduced-motion support.
-* No API key or cron; listings load on demand, with optional shared and local caching.
+* Accessible: labelled controls, `aria-live` updates, managed keyboard focus, RTL-aware controls, and reduced-motion support.
+* No API key or cron; listings load on demand and are cached on your site (on by default) and briefly in the browser.
 * SEO-friendly: emits Schema.org structured data (AnimalShelter + a pet ItemList).
 * Card display toggles (location, story, breed, badge) and a flip-to-read pet story.
+* Settings screen with a live style preview and built-in Help, plus a Petfinder Explorer tool (Tools → Petfinder Explorer).
 
 == Installation ==
 
@@ -70,7 +72,9 @@ Compact four-card teaser ordered by Petfinder publication time:
 * `adoptapet_url`, `petfinder_member_url` — fallback links shown if the live listings can't load.
 * `api_base`, `s3_url`, `petfinder_url` — advanced endpoint overrides; these match Petfinder's public widget and rarely need changing.
 
-Settings also include toggles for **Show pet stories** (flip to read), **Show location**, **Show age & size badge**, and **Show plugin credit**.
+Values for `type`, `status`, and `sort` are case-insensitive.
+
+Settings also include toggles for **Show pet stories** (flip to read), **Show location**, **Show age & size badge**, and **Show plugin credit**, plus **SEO structured data**, **Shared cache**, and **Cache lifetime** under Performance.
 
 Cached results may lag behind Petfinder by the configured cache lifetime,
 including when `sort="newest"` is used. The newest ordering is applied before
@@ -97,6 +101,35 @@ Yes — set the **Animal type** in Settings, or use `type="dog"` on the shortcod
 
 Yes. Each `[purrfect_match]` shortcode renders an independent widget.
 
+= A pet I just added on Petfinder isn't showing. Why? =
+
+Listings are cached: in the visitor's browser for 10 minutes, and in the shared
+site cache for the **Cache lifetime** setting (120 minutes by default). New pets
+appear once those expire. Lower the cache lifetime, or turn the shared cache
+off, if you need faster updates.
+
+= How is the shared cache refreshed? =
+
+When a logged-in user who can edit pages views a page with the widget, their
+browser loads fresh listings from Petfinder and saves a copy on your site.
+Visitors only read that copy; they can't write to it.
+
+= What happens if Petfinder is unavailable? =
+
+The widget shows a friendly message with a Try again button. If you set the
+Adopt-a-Pet and Petfinder links under **Fallback links**, they appear there too
+(and in the no-JavaScript message).
+
+= Can I check what data Petfinder has for my organization? =
+
+Yes. **Tools → Petfinder Explorer** runs live queries from your browser and can
+probe for optional fields such as descriptions.
+
+= What does uninstalling remove? =
+
+Deleting the plugin removes its settings and shared-cache data on every site,
+including multisite networks.
+
 == Privacy ==
 
 This plugin does not add form, account, or tracking data to Petfinder requests,
@@ -115,9 +148,10 @@ visitor's browser** from Petfinder's public widget data source:
 * Petfinder photo CDN — pet images load directly from Petfinder's image host,
   which receives the ordinary connection metadata described above.
 
-With the optional **Shared cache** setting enabled, a logged-in editor/admin's
-browser refreshes a copy stored on your own site, which visitors then read
-instead of each calling Petfinder.
+With the **Shared cache** setting (on by default), a logged-in editor/admin's
+browser refreshes a copy of the public listing data stored on your own site,
+which visitors then read instead of each calling Petfinder. It contains no
+visitor data and can be turned off under Performance.
 
 This plugin is **not affiliated with, endorsed by, or sponsored by Petfinder**.
 "Petfinder" is a trademark of its respective owner. Your use of Petfinder data is

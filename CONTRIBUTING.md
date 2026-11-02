@@ -21,12 +21,23 @@ and JS directly and test in a WordPress install (drop the folder into
   transpile) so it runs anywhere WordPress does.
 - **CSS** is hand-written and uses the plugin's `.pm-` class namespace.
 
-Before opening a PR, make sure changed files pass a quick lint:
+Before opening a PR, lint what you changed and run the verifiers
+(PHP 7.0+ and Node 18+; see [tools/README.md](tools/README.md)):
 
 ```bash
 php -l path/to/file.php
 node --check assets/js/purrfect-match.js
+
+node tools/verify-newest-sort.mjs
+php tools/verify-shortcode-sort.php
+php tools/verify-shortcode-sort.php --docs
+php tools/verify-brand-contrast.php
 ```
+
+For visual changes, check the static review pages in `preview/` (serve the repo
+with `php -S 127.0.0.1:8765` and open `/preview/public.php?state=ready`, or
+`loading`, `empty`, `error`, `story`), and keep their markup in step with what
+`templates/widget.php` and `assets/js/purrfect-match.js` render.
 
 ### Building a release ZIP
 
@@ -51,6 +62,15 @@ Bump the version in lockstep in:
 …and add matching `== Changelog ==` and `== Upgrade Notice ==` entries in
 `readme.txt`. Check with `php tools/verify-shortcode-sort.php --docs`, and see
 [tools/README.md](tools/README.md) for the other verifiers.
+
+### Release checklist
+
+1. Bump the version everywhere listed above and add changelog and upgrade-notice entries.
+2. Run the lint and verifier commands above.
+3. Commit, then run `bash bin/build.sh` (it refuses to build with uncommitted
+   or untracked files, or if the versions disagree).
+4. Install the ZIP on a test site and smoke-test: activate, save settings,
+   view a page with the shortcode, and check the browser console.
 
 ## Pull requests
 
