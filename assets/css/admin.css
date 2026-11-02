@@ -25,7 +25,6 @@
 }
 
 .pm-admin .notice { margin: 1rem 0; }
-.pm-admin .pm-hide { display: none; }
 
 /* Hero ------------------------------------------------------------ */
 
@@ -250,6 +249,7 @@
 	width: 28px;
 	height: 28px;
 	border-radius: 8px;
+	background: #f0e6e6;
 	background: color-mix(in srgb, var(--pm-admin-brand) 12%, #f3eee7);
 	color: var(--pm-admin-ink);
 	font-size: 10px;
@@ -276,6 +276,7 @@
 .pm-admin-card code {
 	padding: .12rem .38rem;
 	border-radius: 5px;
+	background: #f2ebe9;
 	background: color-mix(in srgb, var(--pm-admin-brand) 9%, #f4f1ec);
 	font-size: .86em;
 }
@@ -510,6 +511,7 @@
 	place-items: center;
 	background: #e5ddd4;
 	background: linear-gradient(145deg, color-mix(in srgb, var(--pm-admin-brand) 23%, #eee7df), #e5ddd4);
+	color: var(--pm-admin-brand);
 	color: color-mix(in srgb, var(--pm-admin-brand) 72%, #392f28);
 	font-size: 1.7rem;
 }

@@ -75,7 +75,7 @@ if ($Mode -eq 'design') {
 	Assert-Pattern $css '\.pm-wrap\s+\.pm-cta:hover[^}]*color:\s*var\(--pm-on-brand\)\s*!important' 'primary CTA host-theme state isolation'
 	Assert-Pattern $css '\.pm-wrap\s+\.pm-btn-brand:hover[^}]*color:\s*var\(--pm-on-brand\)\s*!important' 'brand-button host-theme state isolation'
 	Assert-NoPattern $css '\.pm-cta:hover\s*\{[^}]*opacity:' 'primary CTA hover contrast dilution'
-	Assert-Pattern $css '\.pm-state-title,[\s\S]*?font-family:\s*inherit' 'state-heading font isolation'
+	Assert-Pattern $css '\.pm-state-title\s*[,{][\s\S]*?font-family:\s*inherit' 'state-heading font isolation'
 
 	$publicBundle = $css + "`n" + $js + "`n" + $template + "`n" + $preview
 	Assert-NoPattern $publicBundle '#000000|#000\b' 'pure black'
@@ -99,9 +99,19 @@ if ($Mode -eq 'design') {
 	exit 0
 }
 
-$php = [IO.Path]::GetFullPath((Join-Path $root '..\.tools\php-8.4\php.exe'))
-$node = Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
-$git = [IO.Path]::GetFullPath((Join-Path $root '..\.tools\mingit\cmd\git.exe'))
+# Resolve a runtime: an explicit environment override, then the bundled
+# Windows toolchain path, then whatever is on PATH.
+function Resolve-Tool([string]$EnvName, [string]$Bundled, [string]$Command) {
+	$override = [Environment]::GetEnvironmentVariable($EnvName)
+	if ($override) { return $override }
+	if ($Bundled -and (Test-Path -LiteralPath $Bundled -PathType Leaf)) { return $Bundled }
+	$found = Get-Command $Command -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+	if ($found) { return $found.Source }
+	return $Bundled
+}
+$php = Resolve-Tool 'PM_PHP' ([IO.Path]::GetFullPath((Join-Path $root '..\.tools\php-8.4\php.exe'))) 'php'
+$node = Resolve-Tool 'PM_NODE' $(if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' } else { '' }) 'node'
+$git = Resolve-Tool 'PM_GIT' ([IO.Path]::GetFullPath((Join-Path $root '..\.tools\mingit\cmd\git.exe'))) 'git'
 
 foreach ($tool in @($php, $node, $git)) {
 	if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {

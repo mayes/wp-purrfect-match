@@ -119,7 +119,6 @@ class Purrfect_Match {
 					'copied'       => __( 'Copied!', 'purrfect-match' ),
 					'copyFailed'   => __( 'Copy failed', 'purrfect-match' ),
 					'previewOrg'   => __( 'Your rescue', 'purrfect-match' ),
-					'previewTitle' => __( 'Find your purr-fect match', 'purrfect-match' ),
 				)
 			);
 			return;
@@ -128,7 +127,7 @@ class Purrfect_Match {
 		// Petfinder Explorer tool screen.
 		if ( 'tools_page_' . Purrfect_Match_Settings::PAGE . '-explorer' === $hook ) {
 			$options = Purrfect_Match_Settings::get_options();
-			$orgs    = array_filter( array_map( 'trim', explode( ',', (string) $options['organization'] ) ) );
+			$orgs    = Purrfect_Match_Settings::parse_organizations( $options['organization'] );
 
 			wp_enqueue_style(
 				'purrfect-match-explorer',
@@ -147,7 +146,7 @@ class Purrfect_Match {
 				'purrfect-match-explorer',
 				'PM_EXPLORER',
 				array(
-					'org'     => $orgs ? reset( $orgs ) : '',
+					'org'     => $orgs ? $orgs[0] : '',
 					'type'    => $options['type'],
 					'apiBase' => $options['api_base'],
 				)
@@ -156,7 +155,8 @@ class Purrfect_Match {
 	}
 
 	/**
-	 * Show a one-time setup nudge in wp-admin until an organization is set.
+	 * Show a setup nudge in wp-admin until an organization is set. It is not
+	 * dismissible on purpose: the widget shows nothing until this is done.
 	 *
 	 * @return void
 	 */
@@ -177,7 +177,7 @@ class Purrfect_Match {
 		}
 
 		$url = admin_url( 'options-general.php?page=' . Purrfect_Match_Settings::PAGE );
-		echo '<div class="notice notice-info is-dismissible"><p>';
+		echo '<div class="notice notice-info"><p>';
 		printf(
 			/* translators: %s: settings page link. */
 			esc_html__( 'Purrfect Match is almost ready — add your Petfinder organization ID in %s to start showing adoptable pets.', 'purrfect-match' ),
@@ -307,14 +307,10 @@ class Purrfect_Match {
 		$atts['hide_breed']  = $this->truthy( $atts['hide_breed'] );
 		$atts['show_credit'] = $this->truthy( $atts['show_credit'] );
 
-		$allowed_types = array( 'cat', 'dog', 'rabbit', 'small-furry', 'bird', 'horse', 'barnyard', 'scales-fins-other' );
-		if ( ! in_array( $atts['type'], $allowed_types, true ) ) {
-			$atts['type'] = $options['type'];
-		}
-
-		$allowed_status = array( 'adoptable', 'adopted', 'found' );
-		if ( ! in_array( $atts['status'], $allowed_status, true ) ) {
-			$atts['status'] = $options['status'];
+		// Enumerations are matched like sort: case- and whitespace-insensitive.
+		foreach ( array( 'type' => Purrfect_Match_Settings::allowed_types(), 'status' => Purrfect_Match_Settings::allowed_statuses() ) as $key => $allowed ) {
+			$value = is_scalar( $atts[ $key ] ) ? strtolower( trim( (string) $atts[ $key ] ) ) : '';
+			$atts[ $key ] = in_array( $value, $allowed, true ) ? $value : $options[ $key ];
 		}
 
 		// Sort is intentionally shortcode-only. Convert the caller's value to
@@ -322,14 +318,7 @@ class Purrfect_Match {
 		$sort         = is_scalar( $atts['sort'] ) ? strtolower( trim( (string) $atts['sort'] ) ) : 'default';
 		$atts['sort'] = in_array( $sort, array( 'default', 'newest' ), true ) ? $sort : 'default';
 
-		$organizations = array_filter( array_map( 'trim', explode( ',', (string) $atts['organization'] ) ) );
-		$organizations = array_map(
-			static function ( $id ) {
-				return preg_replace( '/[^A-Za-z0-9\-]/', '', $id );
-			},
-			$organizations
-		);
-		$atts['organization'] = implode( ', ', array_filter( $organizations ) );
+		$atts['organization'] = Purrfect_Match_Settings::parse_organizations( $atts['organization'] );
 
 		if ( ! preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $atts['brand'] ) ) {
 			$atts['brand'] = '#e93396';
@@ -422,8 +411,10 @@ class Purrfect_Match {
 			'newTab'             => __( '(opens in a new tab)', 'purrfect-match' ),
 			/* translators: {name} is replaced with the pet's name at runtime; keep the token unchanged. */
 			'photoOf'            => __( 'Photo of {name}', 'purrfect-match' ),
+			/* translators: {breed} is replaced with a breed name (e.g. Domestic Short Hair) at runtime; keep the token unchanged. */
+			'breedMix'           => __( '{breed} Mix', 'purrfect-match' ),
 			'filterTip'          => __( 'Choose a filter to narrow the list.', 'purrfect-match' ),
-			/* translators: {label} is replaced with a filter value at runtime; keep the token unchanged. */
+			/* translators: {label} is replaced with the filter name (e.g. Breed) at runtime; keep the token unchanged. */
 			'removeFilter'       => __( 'Remove {label} filter', 'purrfect-match' ),
 			/* translators: {shown} and {total} are replaced with numbers at runtime; keep the tokens unchanged. */
 			'showingCount'       => __( 'Showing {shown} of {total}', 'purrfect-match' ),
@@ -455,8 +446,6 @@ class Purrfect_Match {
 	 * @return array
 	 */
 	protected function build_config( $atts ) {
-		$orgs = array_filter( array_map( 'trim', explode( ',', (string) $atts['organization'] ) ) );
-		$orgs = array_values( $orgs );
 		$s3_url = esc_url_raw( $atts['s3_url'] );
 
 		$options = Purrfect_Match_Settings::get_options();
@@ -465,7 +454,7 @@ class Purrfect_Match {
 			'apiBase'      => esc_url_raw( $atts['api_base'] ),
 			's3Url'        => $s3_url ? trailingslashit( $s3_url ) : '',
 			'petfinderUrl' => esc_url_raw( $atts['petfinder_url'] ),
-			'organization'      => $orgs,
+			'organization'      => $atts['organization'],
 			'type'              => sanitize_text_field( $atts['type'] ),
 			'status'            => sanitize_text_field( $atts['status'] ),
 			'sort'              => 'newest' === $atts['sort'] ? 'newest' : 'default',
@@ -475,7 +464,6 @@ class Purrfect_Match {
 			'showBios'          => ! empty( $options['show_bios'] ),
 			'showLocation'      => ! empty( $options['show_location'] ),
 			'showBadge'         => ! empty( $options['show_badge'] ),
-			'brand'             => $atts['brand'],
 			'orgName'           => sanitize_text_field( $atts['org_name'] ),
 			'adoptionFormUrl'   => esc_url_raw( $atts['adoption_form_url'] ),
 			'adoptapetUrl'      => esc_url_raw( $atts['adoptapet_url'] ),

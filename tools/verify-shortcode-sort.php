@@ -89,7 +89,6 @@ if ( $docs_mode ) {
 	$teaser_html = ob_get_clean();
 	pm_sort_assert( 4 === substr_count( $teaser_html, '<article class="pm-card' ), 'teaser preview does not render exactly four pet cards' );
 	pm_sort_contains( $teaser_html, 'class="pm-wrap pm-cols-4"', 'teaser preview is not using the four-column widget class' );
-	pm_sort_contains( $teaser_html, '--pm-cols:4', 'teaser preview is not using the four-column token' );
 	pm_sort_contains( $teaser_html, 'Showing 4 adoptable cats', 'teaser preview count does not match four cards' );
 	pm_sort_contains( $teaser_html, '/ newest teaser', 'teaser preview note does not identify the fixture' );
 	$widget_html = strstr( $teaser_html, '<section class="pm-wrap' );

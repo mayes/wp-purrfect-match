@@ -13,13 +13,22 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 # git archive packages committed HEAD, so refuse a misleading release when
-# tracked files differ from that commit.
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "Refusing to build: commit or stash tracked changes first." >&2
+# the working tree (tracked or new files, outside dist/) differs from it.
+if [ -n "$(git status --porcelain --untracked-files=normal -- . ':(exclude)dist')" ]; then
+  echo "Refusing to build: commit or stash changes (including new files) first." >&2
   exit 1
 fi
 
-VERSION="$(git show HEAD:readme.txt | grep -m1 'Stable tag:' | sed 's/.*:[[:space:]]*//')"
+# The three version strings must agree, or WordPress shows one version while
+# the readme advertises another.
+VERSION="$(git show HEAD:readme.txt | grep -m1 'Stable tag:' | sed 's/.*:[[:space:]]*//' | tr -d '[:space:]')"
+HEADER_VERSION="$(git show HEAD:purrfect-match.php | sed -n 's/^ \* Version:[[:space:]]*//p' | head -n1 | tr -d '[:space:]')"
+CONST_VERSION="$(git show HEAD:purrfect-match.php | sed -n "s/.*PURRFECT_MATCH_VERSION', '\([^']*\)'.*/\1/p" | head -n1)"
+if [ -z "$VERSION" ] || [ "$VERSION" != "$HEADER_VERSION" ] || [ "$VERSION" != "$CONST_VERSION" ]; then
+  echo "Refusing to build: versions disagree (readme ${VERSION:-?}, header ${HEADER_VERSION:-?}, constant ${CONST_VERSION:-?})." >&2
+  exit 1
+fi
+
 OUT="dist"
 mkdir -p "$OUT"
 rm -f "${OUT}/${SLUG}.zip"
@@ -28,6 +37,6 @@ rm -f "${OUT}/${SLUG}.zip"
 # ZIP to unpack), applying .gitattributes export-ignore.
 git archive --format=zip --prefix="${SLUG}/" -o "${OUT}/${SLUG}.zip" HEAD
 
-echo "Built ${OUT}/${SLUG}.zip (version ${VERSION:-unknown})"
+echo "Built ${OUT}/${SLUG}.zip (version ${VERSION})"
 echo "--- contents ---"
-unzip -l "${OUT}/${SLUG}.zip" | awk 'NR>3 && $4 {print $4}'
+unzip -Z1 "${OUT}/${SLUG}.zip"

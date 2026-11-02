@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.8.1-e93396" alt="Version 1.8.1">
+  <img src="https://img.shields.io/badge/version-1.8.2-e93396" alt="Version 1.8.2">
   <img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue" alt="License GPL-2.0-or-later">
   <img src="https://img.shields.io/badge/WordPress-5.6%2B-21759b" alt="WordPress 5.6+">
   <img src="https://img.shields.io/badge/PHP-7.0%2B-777bb4" alt="PHP 7.0+">
@@ -83,6 +83,9 @@ For a compact four-card teaser ordered by Petfinder publication time:
 | `brand`        | `#e93396`                    | Accent color (hex).                                     |
 | `org_name`     | *(empty)*                    | Shown in the banner and as a location fallback.         |
 | `org_website`  | *(empty)*                    | "Visit" link in the banner.                             |
+| `show_credit`  | `true`                       | Show the small plugin credit in the footer.             |
+| `adoptapet_url`, `petfinder_member_url` | *(empty)* | Fallback links shown if the live listings can't load. |
+| `api_base`, `s3_url`, `petfinder_url` | Petfinder defaults | Advanced endpoint overrides (rarely needed). |
 
 Settings also include toggles for **Show pet stories** (flip to read), **Show
 location**, **Show age & size badge**, **Show plugin credit**, **SEO structured
@@ -136,6 +139,10 @@ includes/class-rest.php            Optional shared-cache REST endpoint.
 templates/widget.php               Front-end markup (one instance per shortcode).
 assets/css/purrfect-match.css      Namespaced widget styles (brand + columns via CSS vars).
 assets/js/purrfect-match.js        Client-side GraphQL data layer + filter UI.
+assets/css/admin.css               Settings screen styles.
+assets/js/admin.js                 Settings screen live preview and copy buttons.
+assets/css/explorer.css            Tools → Petfinder Explorer styles.
+assets/js/explorer.js              Tools → Petfinder Explorer query runner.
 uninstall.php                      Removes saved options and cache on delete.
 readme.txt                         WordPress.org-style readme.
 ```

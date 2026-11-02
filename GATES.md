@@ -1,5 +1,11 @@
 # Gates: Purrfect Match release quality
 
+> This file is the audit record for the **1.8.0** release; its ticks and
+> evidence describe that release and are not re-claimed for later versions.
+> Local machine paths in the evidence lines were redacted to
+> `<repository-root>` in 1.8.2. Later releases are checked with the
+> cross-platform verifiers listed in `tools/README.md`.
+
 OWNS: GATES.md, .gitignore, .gitattributes, .distignore, purrfect-match.php, readme.txt, README.md, examples/cjpaws.md, tools/verify-public-design.ps1, tools/verify-brand-contrast.php, tools/verify-newest-sort.ps1, tools/verify-newest-sort.mjs, tools/verify-shortcode-sort.php, tools/verify-release-archive.ps1, templates/widget.php, assets/css/purrfect-match.css, assets/js/purrfect-match.js, includes/class-purrfect-match.php, includes/class-settings.php, includes/class-rest.php, preview/admin.html, preview/public.php, preview/screenshots/public-*.png
 
 Scope: Deliver a polished, responsive visitor-facing adoption experience while preserving the WordPress, shortcode, REST, and Petfinder behavior of the existing plugin.
@@ -26,27 +32,27 @@ Scope: Deliver a polished, responsive visitor-facing adoption experience while p
 - [x] G6: The CJPaws integration refinement resists host-theme typography and link-state overrides, removes the redundant same-site link, and keeps the filters balanced at the live page's medium and phone embed widths.
   CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode design && powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode contracts
   EXPECT: /PUBLIC DESIGN VERIFICATION PASSED[\s\S]*PUBLIC CONTRACT VERIFICATION PASSED/
-  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=1c5f98e14ab6f46142455cc12ce3414d179e78f29a1d2c13909d44d0f944c799; output-bytes=72
+  EVIDENCE: exit=0; shell=cmd.exe; cwd=<repository-root>; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=1c5f98e14ab6f46142455cc12ce3414d179e78f29a1d2c13909d44d0f944c799; output-bytes=72
 
 - [x] G7: The allow-listed sort contract preserves default ordering, emits newest publication ordering only when requested, falls back safely, applies the limit after ordering, and separates both cache modes.
   CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-newest-sort.ps1 -Mode all
   EXPECT: NEWEST SORT CONTRACT VERIFICATION PASSED
-  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=a7bb66852a1ebffd1ca3c65fbb2fd4c9faecff4c95c6fd0ecfec263bda5c5acf; output-bytes=42
+  EVIDENCE: exit=0; shell=cmd.exe; cwd=<repository-root>; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=a7bb66852a1ebffd1ca3c65fbb2fd4c9faecff4c95c6fd0ecfec263bda5c5acf; output-bytes=42
 
 - [x] G8: Version 1.8.0 and newest-sort documentation are synchronized across shipped metadata, editor help, and the CJ Paws compact teaser example.
   CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-newest-sort.ps1 -Mode docs
   EXPECT: NEWEST SORT DOCUMENTATION VERIFICATION PASSED
-  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=50cd046e230f64d19359eabc75570e664a3915e8b8e4d8a30407bf2ebe1d0c56; output-bytes=47
+  EVIDENCE: exit=0; shell=cmd.exe; cwd=<repository-root>; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=50cd046e230f64d19359eabc75570e664a3915e8b8e4d8a30407bf2ebe1d0c56; output-bytes=47
 
 - [x] G9: Existing WordPress, shortcode, REST, Petfinder, accessibility, schema, privacy, and no-build production contracts remain intact.
   CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode contracts
   EXPECT: PUBLIC CONTRACT VERIFICATION PASSED
-  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=c39a45f66e03b4cf1605dfe27a8d65761b09c69a56e5b3b6c6baa069068819c2; output-bytes=37
+  EVIDENCE: exit=0; shell=cmd.exe; cwd=<repository-root>; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=c39a45f66e03b4cf1605dfe27a8d65761b09c69a56e5b3b6c6baa069068819c2; output-bytes=37
 
 - [x] G10: Existing visual states, responsive layout, focus treatment, and reduced-motion CSS remain intact.
   CHECK: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools\verify-public-design.ps1 -Mode design
   EXPECT: PUBLIC DESIGN VERIFICATION PASSED
-  EVIDENCE: exit=0; shell=C:\WINDOWS\system32\cmd.exe; cwd=C:\Users\VM Gateway\Documents\Mayes\wp-purrfect-match-main; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=f056324a2ff3a21a399915524a0e62b4a9f90fcd1fe638839593ba09730164e7; output-bytes=35
+  EVIDENCE: exit=0; shell=cmd.exe; cwd=<repository-root>; path=9375033846e0/22 entries; EXPECT=matched; output-sha256=f056324a2ff3a21a399915524a0e62b4a9f90fcd1fe638839593ba09730164e7; output-bytes=35
 
 - [x] G11: Desktop and mobile browser QA confirms the four-card newest teaser plus loading, empty, error, retry, filters, stories, application links, schema, keyboard focus, and reduced-motion behavior.
   EVIDENCE: In-app browser QA on 2026-08-30 verified four columns and no horizontal overflow at 1440x900, then one column, 44px controls, and no overflow at 390x844. The production JavaScript runtime harness emitted `publish_time DESC` through `$sort: [SortInput!]!`, requested optional `meta { publishTime }`, rendered four cards and a four-item ItemList schema, kept all four application links `noopener`, and made no visible newest claim. Runtime interactions verified four loading skeletons; populated and empty states; a two-request automatic downgrade; a public error after both upstream attempts failed; manual retry recovery on request three; Siamese filtering from four cards to Juniper and clear back to four; story focus transfer to the close control; Escape closure with focus restored to the opener; keyboard-visible focus; and reduced-motion media overrides. Reviewed `preview/screenshots/public-newest-desktop.png`, `public-newest-mobile.png`, `public-newest-error.png`, and `public-newest-story.png` at original resolution.

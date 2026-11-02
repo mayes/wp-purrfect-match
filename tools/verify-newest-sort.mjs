@@ -92,6 +92,15 @@ class MemoryStorage {
 	keys() {
 		return Array.from( this.values.keys() );
 	}
+
+	get length() {
+		return this.values.size;
+	}
+
+	key( index ) {
+		const all = this.keys();
+		return index < all.length ? all[ index ] : null;
+	}
 }
 
 function classList() {
@@ -262,7 +271,7 @@ async function runWidget( options ) {
 		apiBase: apiBase,
 		s3Url: 'https://images.example.test/',
 		petfinderUrl: 'https://www.petfinder.com/',
-		organization: [ organizationId ],
+		organization: options.organization || [ organizationId ],
 		type: 'cat',
 		status: 'adoptable',
 		limit: options.limit == null ? 4 : options.limit,
@@ -275,7 +284,8 @@ async function runWidget( options ) {
 		canWrite: !! options.canWrite,
 		restUrl: options.serverCache ? restUrl : '',
 		restNonce: 'test-nonce',
-		seo: !! options.seo
+		seo: !! options.seo,
+		strings: options.strings || {}
 	};
 	if ( Object.prototype.hasOwnProperty.call( options, 'sort' ) ) {
 		config.sort = options.sort;
@@ -310,6 +320,10 @@ async function runWidget( options ) {
 		}
 
 		assert.equal( request.url, apiBase, 'unexpected network destination' );
+		if ( request.payload && /query GetOrganization/.test( request.payload.query ) ) {
+			assert.ok( options.orgRespond, 'unexpected organization lookup' );
+			return Promise.resolve( options.orgRespond( request ) );
+		}
 		assert.ok( request.payload && /query SearchAnimal/.test( request.payload.query ), 'expected SearchAnimal request' );
 		const result = options.respond( request, graphIndex );
 		graphIndex += 1;
@@ -586,6 +600,8 @@ async function testRichDescriptionDowngrade() {
 async function testNewestSortFallback() {
 	const result = await runWidget( {
 		sort: 'newest',
+		serverCache: true,
+		canWrite: true,
 		respond: function ( call, index ) {
 			if ( index === 0 ) {
 				return graphQLError( 'Sort field publish_time is not supported.' );
@@ -598,6 +614,12 @@ async function testNewestSortFallback() {
 	assertNewestRequest( calls[ 0 ] );
 	assertDefaultRequest( calls[ 1 ] );
 	assert.match( result.grid.innerHTML, /Fallback default 01/ );
+	assert.equal( result.storage.keys().filter( function ( key ) {
+		return key.indexOf( 'pmcache:v2:' ) === 0;
+	} ).length, 0, 'page-zero fallback results were cached under the newest key' );
+	assert.equal( result.calls.filter( function ( call ) {
+		return call.method === 'POST' && call.url === restUrl;
+	} ).length, 0, 'page-zero fallback results were written to the shared server cache' );
 	assert.doesNotMatch( result.grid.innerHTML, /newest/i, 'fallback result was labeled newest' );
 	assert.equal( result.errors.length, 0 );
 }
@@ -751,12 +773,16 @@ function assertMotionAndFocusCssContracts() {
 	assert.match( reduced[ 1 ], /animation-duration:\s*\.001ms\s*!important/, 'reduced motion does not neutralize animations' );
 	assert.match( reduced[ 1 ], /animation-iteration-count:\s*1\s*!important/, 'reduced motion does not cap animation iterations' );
 	assert.match( reduced[ 1 ], /transition-duration:\s*\.001ms\s*!important/, 'reduced motion does not neutralize transitions' );
+	// Opening must not transition visibility from hidden, or the close button
+	// is still hidden when the script focuses it and focus falls to <body>.
+	assert.match( cssSource, /\.pm-card\.is-flipped \.pm-card-back\s*\{[^}]*transition:[^};]*visibility 0s/, 'open story panel must become visible immediately so focus can move into it' );
 	assert.match( cssSource, /\.pm-wrap :is\(a, button, select\):focus-visible\s*\{[\s\S]*?outline:\s*2px solid var\(--pm-focus\)\s*!important/, 'keyboard focus outline contract changed' );
 }
 
 async function testExistingUiBehaviorContracts() {
 	const loaded = animals( 'Legacy', 2 );
 	loaded[ 1 ].physical.breed.primary = 'Siamese';
+	loaded[ 0 ].description = 'Line one.\r\n\r\n\r\n   Line   two.';
 	const result = await runWidget( {
 		adoptionFormUrl: 'https://cjpaws.org/adopt/apply/?source=widget',
 		limit: 4,
@@ -779,6 +805,9 @@ async function testExistingUiBehaviorContracts() {
 		'adoption application link no longer carries the pet name/id safely'
 	);
 	assert.match( result.grid.innerHTML, /class="pm-cta-view"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/, 'Petfinder profile link safety contract changed' );
+	assert.match( result.grid.innerHTML, /class="pm-media-link"[^>]*tabindex="-1" aria-hidden="true"/, 'redundant photo link is back in the tab order' );
+	assert.match( result.grid.innerHTML, /<h4 class="pm-name"[^>]*><a class="pm-name-link"[^>]*>Legacy 01<span class="pm-sr-only"> \(opens in a new tab\)<\/span><\/a><\/h4>/, 'name link lost its heading level or new-tab hint' );
+	assert.match( result.grid.innerHTML, /pm-back-story" tabindex="0">Line one\.\n\nLine two\.</, 'story paragraph breaks were not preserved' );
 
 	const schema = result.root.children.find( function ( child ) { return child.className === 'pm-schema'; } );
 	assert.ok( schema, 'schema output was not injected' );
@@ -809,6 +838,7 @@ async function testExistingUiBehaviorContracts() {
 	assert.match( result.grid.innerHTML, /Legacy 01/ );
 	assert.match( result.grid.innerHTML, /Legacy 02/ );
 	assert.equal( result.controls.breed.value, 'all', 'clear did not reset the breed select' );
+	assert.equal( result.controls.breed.focused, true, 'clear dropped focus instead of moving it to the first filter' );
 	testStoryKeyboardBehavior( result );
 
 	const emptyResult = await runWidget( {
@@ -841,6 +871,67 @@ async function testExistingUiBehaviorContracts() {
 	assert.match( retryResult.grid.innerHTML, /Retry 01/, 'retry result did not render' );
 
 	assertMotionAndFocusCssContracts();
+
+	const extras = await runWidget( {
+		adoptionFormUrl: 'https://cjpaws.org/apply/#form',
+		strings: { breedMix: '{breed} (mixed)' },
+		respond: function () {
+			const list = animals( 'Extra', 1 );
+			list[ 0 ].physical.breed.mixed = true;
+			return searchResponse( list );
+		}
+	} );
+	assert.match( extras.grid.innerHTML, /href="https:\/\/cjpaws\.org\/apply\/\?pet=Extra%2001&amp;pet_id=extra-01#form"/, 'adoption link put pet parameters inside the URL fragment' );
+	assert.match( extras.grid.innerHTML, /Domestic Short Hair \(mixed\)/, 'mixed-breed label is not translatable' );
+}
+
+async function testDedupeAcrossPages() {
+	const list = animals( 'Dedupe', 29 );
+	const result = await runWidget( {
+		limit: 0,
+		respond: function ( call ) {
+			const fromPage = call.payload.variables.pagination.fromPage;
+			// Page 1 repeats the last pet of page 0 (a listing shifted pages).
+			return fromPage === 0 ? searchResponse( list.slice( 0, 24 ), 30 ) : searchResponse( list.slice( 23 ), 30 );
+		}
+	} );
+	const ids = cachedCats( result ).map( function ( cat ) { return cat.id; } );
+	assert.equal( ids.length, 29, 'duplicate pets across pages were not removed' );
+	assert.equal( new Set( ids ).size, 29 );
+}
+
+async function testPartialOrganizationNotCached() {
+	const result = await runWidget( {
+		organization: [ organizationId, 'FL9999' ],
+		serverCache: true,
+		canWrite: true,
+		orgRespond: function () { return response( { errors: [ { message: 'upstream timeout' } ] }, 503 ); },
+		respond: function () { return searchResponse( animals( 'Partial', 2 ) ); }
+	} );
+	assert.match( result.grid.innerHTML, /Partial 01/, 'resolved organization pets were not shown' );
+	assert.equal( result.storage.keys().filter( function ( key ) {
+		return key.indexOf( 'pmcache:v2:' ) === 0;
+	} ).length, 0, 'a partial organization set was cached locally' );
+	assert.equal( result.calls.filter( function ( call ) {
+		return call.method === 'POST' && call.url === restUrl;
+	} ).length, 0, 'a partial organization set was written to the shared cache' );
+}
+
+async function testStaleVisitorCachePruned() {
+	const storage = new MemoryStorage();
+	storage.setItem( 'pmcache:v1:legacy', JSON.stringify( { t: Date.now(), cats: [] } ) );
+	storage.setItem( 'pmcache:v2:expired', JSON.stringify( { t: 1, cats: [] } ) );
+	storage.setItem( 'pmcache:v2:fresh-other', JSON.stringify( { t: Date.now(), cats: [] } ) );
+	storage.setItem( 'theme-setting', 'keep me' );
+	const result = await runWidget( {
+		storage: storage,
+		respond: function () { return searchResponse( animals( 'Prune', 1 ) ); }
+	} );
+	assert.equal( storage.getItem( 'pmcache:v1:legacy' ), null, 'older-format cache entry was not pruned' );
+	assert.equal( storage.getItem( 'pmcache:v2:expired' ), null, 'expired cache entry was not pruned' );
+	assert.notEqual( storage.getItem( 'pmcache:v2:fresh-other' ), null, 'a fresh cache entry for another widget was pruned' );
+	assert.equal( storage.getItem( 'theme-setting' ), 'keep me', 'pruning touched a key it does not own' );
+	assert.match( result.grid.innerHTML, /Prune 01/ );
 }
 
 async function main() {
@@ -854,6 +945,9 @@ async function main() {
 	await testCombinedRichAndNewestFallbacks();
 	await testLaterNewestPageRestartsDefaultOrdering();
 	await testExistingUiBehaviorContracts();
+	await testDedupeAcrossPages();
+	await testPartialOrganizationNotCached();
+	await testStaleVisitorCachePruned();
 	console.log( 'JAVASCRIPT SORT CONTRACT VERIFICATION PASSED' );
 }
 

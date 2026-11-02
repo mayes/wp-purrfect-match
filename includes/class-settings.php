@@ -57,10 +57,10 @@ class Purrfect_Match_Settings {
 			'hide_breed'          => 0,
 			'adoption_form_url'   => '',
 
-			// Presentation / copy.
-			'title'               => 'Find your purr-fect match',
-			'eyebrow'             => 'Adoptable Pets',
-			'subtitle'            => 'Filter by breed, size, and age.',
+			// Presentation / copy (translated until the site saves its own).
+			'title'               => __( 'Find your purr-fect match', 'purrfect-match' ),
+			'eyebrow'             => __( 'Adoptable Pets', 'purrfect-match' ),
+			'subtitle'            => __( 'Filter by breed, size, and age.', 'purrfect-match' ),
 			'show_bios'           => 1,
 			'show_location'       => 1,
 			'show_badge'          => 1,
@@ -83,6 +83,41 @@ class Purrfect_Match_Settings {
 			's3_url'        => 'https://dbw3zep4prcju.cloudfront.net/',
 			'petfinder_url' => 'https://www.petfinder.com/',
 		);
+	}
+
+	/**
+	 * Animal types Petfinder accepts, in display order.
+	 *
+	 * @return string[]
+	 */
+	public static function allowed_types() {
+		return array( 'cat', 'dog', 'rabbit', 'small-furry', 'bird', 'horse', 'barnyard', 'scales-fins-other' );
+	}
+
+	/**
+	 * Adoption statuses Petfinder accepts.
+	 *
+	 * @return string[]
+	 */
+	public static function allowed_statuses() {
+		return array( 'adoptable', 'adopted', 'found' );
+	}
+
+	/**
+	 * Split a comma-separated organization list into clean display IDs/UUIDs.
+	 *
+	 * @param mixed $raw Raw comma-separated value.
+	 * @return string[]
+	 */
+	public static function parse_organizations( $raw ) {
+		$ids = is_scalar( $raw ) ? explode( ',', (string) $raw ) : array();
+		$ids = array_map(
+			static function ( $id ) {
+				return preg_replace( '/[^A-Za-z0-9\-]/', '', trim( $id ) );
+			},
+			$ids
+		);
+		return array_values( array_filter( $ids, 'strlen' ) );
 	}
 
 	/**
@@ -168,13 +203,14 @@ class Purrfect_Match_Settings {
 			. '<li>' . $code( 'status' ) . ' — ' . esc_html__( 'adoptable, adopted, found.', 'purrfect-match' ) . '</li>'
 			. '<li>' . $code( 'sort' ) . ' — ' . esc_html__( 'default keeps the established Petfinder order; newest requests recently published pets first.', 'purrfect-match' ) . '</li>'
 			. '<li>' . $code( 'limit' ) . ' — ' . esc_html__( 'maximum pets to load (0 = all).', 'purrfect-match' ) . '</li>'
+			. '<li>' . $code( 'per_page' ) . ' — ' . esc_html__( 'pets shown before “Load more” (0 = all at once; up to 100).', 'purrfect-match' ) . '</li>'
 			. '<li>' . $code( 'columns' ) . ' — ' . esc_html__( 'desktop columns (2–4).', 'purrfect-match' ) . '</li>'
-			. '<li>' . $code( 'hide_breed' ) . ', ' . $code( 'adoption_form_url' ) . ', ' . $code( 'title' ) . ', ' . $code( 'brand' ) . ', ' . $code( 'org_name' ) . ', ' . $code( 'org_website' ) . ' — ' . esc_html__( 'per-instance overrides of the matching settings.', 'purrfect-match' ) . '</li>'
+			. '<li>' . $code( 'hide_breed' ) . ', ' . $code( 'show_credit' ) . ', ' . $code( 'adoption_form_url' ) . ', ' . $code( 'title' ) . ', ' . $code( 'eyebrow' ) . ', ' . $code( 'subtitle' ) . ', ' . $code( 'brand' ) . ', ' . $code( 'org_name' ) . ', ' . $code( 'org_website' ) . ', ' . $code( 'adoptapet_url' ) . ', ' . $code( 'petfinder_member_url' ) . ' — ' . esc_html__( 'per-instance overrides of the matching settings.', 'purrfect-match' ) . '</li>'
 			. '</ul>';
 
 		$settings = '<ul>'
-			. '<li>' . esc_html__( 'Organization, Animal type & Status — which pets to show.', 'purrfect-match' ) . '</li>'
-			. '<li>' . esc_html__( 'Appearance — heading copy, brand color, columns, and card toggles (pet stories, location, age & size badge, plugin credit).', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'Listing — organization, animal type, status, how many pets to load and show per page, columns, and the adoption form link.', 'purrfect-match' ) . '</li>'
+			. '<li>' . esc_html__( 'Appearance — heading copy, brand color, and card toggles (pet stories, location, age & size badge, plugin credit).', 'purrfect-match' ) . '</li>'
 			. '<li>' . esc_html__( 'Performance — the optional shared cache (and its lifetime) and SEO structured data.', 'purrfect-match' ) . '</li>'
 			. '<li>' . esc_html__( 'Fallback links — Adopt-a-Pet / Petfinder URLs shown if the live listings can’t load.', 'purrfect-match' ) . '</li>'
 			. '<li>' . esc_html__( 'Advanced — endpoint and photo-CDN URLs; these rarely need changing.', 'purrfect-match' ) . '</li>'
@@ -277,8 +313,8 @@ class Purrfect_Match_Settings {
 			return;
 		}
 		$options       = self::get_options();
-		$organizations = array_filter( array_map( 'trim', explode( ',', (string) $options['organization'] ) ) );
-		$explorer_org  = $organizations ? reset( $organizations ) : '';
+		$organizations = self::parse_organizations( $options['organization'] );
+		$explorer_org  = $organizations ? $organizations[0] : '';
 		$brand         = preg_match( '/^#[0-9a-fA-F]{6}$/', (string) $options['brand'] ) ? $options['brand'] : '#e93396';
 		$on_brand      = $this->brand_contrast( $brand );
 		?>
@@ -370,22 +406,7 @@ class Purrfect_Match_Settings {
 			'adoption_form_url' => array( __( 'Adoption form URL', 'purrfect-match' ), 'url', __( 'Optional. Adds an “Apply to adopt” button to each pet, linking here with ?pet=Name&pet_id=… so your form can prefill which pet.', 'purrfect-match' ) ),
 		);
 
-		foreach ( $listing_fields as $key => $cfg ) {
-			add_settings_field(
-				'pm_' . $key,
-				$cfg[0],
-				array( $this, 'render_field' ),
-				self::PAGE,
-				'pm_section_listing',
-				array(
-					'key'       => $key,
-					'type'      => $cfg[1],
-					'desc'      => $cfg[2],
-					'label_for' => 'pm_' . $key,
-					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
-				)
-			);
-		}
+		$this->add_fields( 'pm_section_listing', $listing_fields );
 
 		add_settings_section(
 			'pm_section_appearance',
@@ -407,22 +428,7 @@ class Purrfect_Match_Settings {
 			'org_website' => array( __( 'Organization website', 'purrfect-match' ), 'url', '' ),
 		);
 
-		foreach ( $appearance_fields as $key => $cfg ) {
-			add_settings_field(
-				'pm_' . $key,
-				$cfg[0],
-				array( $this, 'render_field' ),
-				self::PAGE,
-				'pm_section_appearance',
-				array(
-					'key'       => $key,
-					'type'      => $cfg[1],
-					'desc'      => $cfg[2],
-					'label_for' => 'pm_' . $key,
-					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
-				)
-			);
-		}
+		$this->add_fields( 'pm_section_appearance', $appearance_fields );
 
 		add_settings_section(
 			'pm_section_fallback',
@@ -436,22 +442,7 @@ class Purrfect_Match_Settings {
 			'petfinder_member_url' => array( __( 'Petfinder member URL', 'purrfect-match' ), 'url', __( 'Your public Petfinder shelter page.', 'purrfect-match' ) ),
 		);
 
-		foreach ( $fallback_fields as $key => $cfg ) {
-			add_settings_field(
-				'pm_' . $key,
-				$cfg[0],
-				array( $this, 'render_field' ),
-				self::PAGE,
-				'pm_section_fallback',
-				array(
-					'key'       => $key,
-					'type'      => $cfg[1],
-					'desc'      => $cfg[2],
-					'label_for' => 'pm_' . $key,
-					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
-				)
-			);
-		}
+		$this->add_fields( 'pm_section_fallback', $fallback_fields );
 
 		add_settings_section(
 			'pm_section_performance',
@@ -466,22 +457,7 @@ class Purrfect_Match_Settings {
 			'seo'           => array( __( 'SEO structured data', 'purrfect-match' ), 'checkbox', __( 'Output Schema.org data (your shelter as an AnimalShelter, plus a pet ItemList) to help search engines and AI assistants understand your listings.', 'purrfect-match' ) ),
 		);
 
-		foreach ( $performance_fields as $key => $cfg ) {
-			add_settings_field(
-				'pm_' . $key,
-				$cfg[0],
-				array( $this, 'render_field' ),
-				self::PAGE,
-				'pm_section_performance',
-				array(
-					'key'       => $key,
-					'type'      => $cfg[1],
-					'desc'      => $cfg[2],
-					'label_for' => 'pm_' . $key,
-					'class'     => 'pm-field-row pm-field-row--' . sanitize_html_class( $cfg[1] ),
-				)
-			);
-		}
+		$this->add_fields( 'pm_section_performance', $performance_fields );
 
 		add_settings_section(
 			'pm_section_advanced',
@@ -496,13 +472,24 @@ class Purrfect_Match_Settings {
 			'petfinder_url' => array( __( 'Petfinder base URL', 'purrfect-match' ), 'url', '' ),
 		);
 
-		foreach ( $advanced_fields as $key => $cfg ) {
+		$this->add_fields( 'pm_section_advanced', $advanced_fields );
+	}
+
+	/**
+	 * Register a section's fields, all rendered by render_field().
+	 *
+	 * @param string $section Settings section ID.
+	 * @param array  $fields  key => array( label, field type, description ).
+	 * @return void
+	 */
+	private function add_fields( $section, array $fields ) {
+		foreach ( $fields as $key => $cfg ) {
 			add_settings_field(
 				'pm_' . $key,
 				$cfg[0],
 				array( $this, 'render_field' ),
 				self::PAGE,
-				'pm_section_advanced',
+				$section,
 				array(
 					'key'       => $key,
 					'type'      => $cfg[1],
@@ -703,23 +690,11 @@ class Purrfect_Match_Settings {
 		$out      = array();
 
 		// Organization: comma-separated list of display IDs / UUIDs.
-		$orgs = isset( $input['organization'] ) ? (string) $input['organization'] : '';
-		$orgs = array_filter( array_map( 'trim', explode( ',', $orgs ) ) );
-		$orgs = array_map(
-			static function ( $id ) {
-				return preg_replace( '/[^A-Za-z0-9\-]/', '', $id );
-			},
-			$orgs
-		);
-		$orgs = array_filter( $orgs );
-		$out['organization'] = implode( ', ', $orgs );
+		$out['organization'] = implode( ', ', self::parse_organizations( isset( $input['organization'] ) ? $input['organization'] : '' ) );
 
 		// Constrained selects.
-		$allowed_types  = array( 'cat', 'dog', 'rabbit', 'small-furry', 'bird', 'horse', 'barnyard', 'scales-fins-other' );
-		$out['type']    = in_array( ( isset( $input['type'] ) ? $input['type'] : '' ), $allowed_types, true ) ? $input['type'] : $defaults['type'];
-
-		$allowed_status = array( 'adoptable', 'adopted', 'found' );
-		$out['status']  = in_array( ( isset( $input['status'] ) ? $input['status'] : '' ), $allowed_status, true ) ? $input['status'] : $defaults['status'];
+		$out['type']   = in_array( ( isset( $input['type'] ) ? $input['type'] : '' ), self::allowed_types(), true ) ? $input['type'] : $defaults['type'];
+		$out['status'] = in_array( ( isset( $input['status'] ) ? $input['status'] : '' ), self::allowed_statuses(), true ) ? $input['status'] : $defaults['status'];
 
 		// Numbers. limit 0 = "all" (fetch everything, bounded by a safety ceiling).
 		$out['limit'] = isset( $input['limit'] ) ? min( 1000, absint( $input['limit'] ) ) : $defaults['limit'];
@@ -898,7 +873,7 @@ class Purrfect_Match_Settings {
 						<div class="pm-preview-window">
 							<div class="pm-preview-copy">
 								<small data-pm-preview-org><?php echo esc_html( $options['org_name'] ? $options['org_name'] : __( 'Your rescue', 'purrfect-match' ) ); ?></small>
-								<strong data-pm-preview-title><?php echo esc_html( $options['title'] ? $options['title'] : __( 'Find your purr-fect match', 'purrfect-match' ) ); ?></strong>
+								<strong data-pm-preview-title<?php echo '' === trim( (string) $options['title'] ) ? ' hidden' : ''; ?>><?php echo esc_html( $options['title'] ); ?></strong>
 							</div>
 							<div class="pm-preview-pet">
 								<div class="pm-preview-photo"><span aria-hidden="true">🐾</span><em><?php esc_html_e( 'Young · Medium', 'purrfect-match' ); ?></em></div>

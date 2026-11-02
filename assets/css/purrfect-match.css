@@ -312,6 +312,10 @@
 	letter-spacing: -.01em;
 }
 
+/* Wrapper-scoped so theme rules like `.entry-content h3` can't recolor the
+   widget's headings on its light surfaces. */
+.pm-wrap :is(.pm-controls-title, .pm-name) { color: var(--pm-ink); }
+
 .pm-controls-hint {
 	margin: .12rem 0 0;
 	color: var(--pm-muted);
@@ -323,6 +327,16 @@
 	flex-wrap: wrap;
 	gap: .5rem;
 }
+
+/* Host themes often style button:hover / :focus (and wrapper-scoped variants);
+   keep each widget button's own surface in every state. Order matters: the
+   quiet and brand variants must follow the base rule. */
+.pm-wrap .pm-btn:is(:hover, :focus, :active) { background: #fff; color: var(--pm-ink); }
+.pm-wrap .pm-btn-quiet:is(:hover, :focus, :active) { background: var(--pm-canvas); }
+.pm-wrap .pm-btn-brand:is(:hover, :focus, :active) { border-color: var(--pm-brand); background: var(--pm-brand); }
+.pm-wrap .pm-chip:is(:focus, :active) { background: rgba(var(--pm-brand-rgb), .1); color: var(--pm-ink); }
+.pm-wrap .pm-chip:hover { background: rgba(var(--pm-brand-rgb), .16); color: var(--pm-ink); }
+.pm-wrap :is(.pm-flip-btn, .pm-link-btn):is(:hover, :focus, :active) { background: transparent; color: var(--pm-ink); }
 
 .pm-btn {
 	appearance: none;
@@ -402,7 +416,8 @@
 	width: 100%;
 	min-height: 2.75rem;
 	margin: 0;
-	padding: .65rem 2.35rem .65rem .8rem;
+	padding-block: .65rem;
+	padding-inline: .8rem 2.35rem;
 	border: 1px solid var(--pm-line);
 	border-radius: .7rem;
 	background-color: #fff;
@@ -418,6 +433,8 @@
 }
 
 .pm-wrap .pm-select:hover { border-color: rgba(var(--pm-brand-rgb), .55); }
+[dir="rtl"] .pm-wrap .pm-select,
+.pm-wrap[dir="rtl"] .pm-select { background-position: left .75rem center !important; }
 .pm-wrap .pm-select option { color: var(--pm-ink); }
 
 .pm-meta {
@@ -592,13 +609,6 @@
 	color: inherit;
 }
 
-/* The card clips overflow and this link spans its top edge, so draw the
-   focus ring inside the link instead of outside. */
-.pm-wrap .pm-media-link:focus-visible {
-	outline-offset: -3px;
-	box-shadow: inset 0 0 0 5px var(--pm-surface) !important;
-}
-
 .pm-card-img {
 	position: absolute;
 	inset: 0;
@@ -636,7 +646,7 @@
 	position: absolute;
 	z-index: 2;
 	top: .8rem;
-	left: .8rem;
+	inset-inline-start: .8rem;
 	max-width: calc(100% - 1.6rem);
 	padding: .38rem .65rem;
 	border: 1px solid rgba(255, 255, 255, .5);
@@ -765,8 +775,6 @@
 	transition: transform .18s ease, opacity .18s ease;
 }
 
-.pm-cta { box-shadow: inset 0 0 0 1px rgba(33, 29, 25, .12); }
-
 /* Keep host-theme anchor states from replacing the button-label colors. */
 .pm-wrap .pm-cta,
 .pm-wrap .pm-cta:visited,
@@ -827,6 +835,9 @@
 	opacity: 1;
 	visibility: visible;
 	transform: none;
+	/* Become visible at once when opening (only the fade animates), so the
+	   script can move focus to the close button in the same tick. */
+	transition: opacity .22s ease, transform .22s ease, visibility 0s;
 }
 
 .pm-card.is-flipped .pm-card-front {
@@ -915,9 +926,7 @@
 	animation: pm-pulse 1.15s ease-in-out infinite;
 }
 
-.pm-state,
-.pm-empty,
-.pm-error {
+.pm-state {
 	grid-column: 1 / -1;
 	display: flex;
 	flex-direction: column;
@@ -932,9 +941,7 @@
 	text-align: center;
 }
 
-.pm-state-icon,
-.pm-empty-emoji,
-.pm-error-emoji {
+.pm-state-icon {
 	width: 3.5rem;
 	height: 3.5rem;
 	display: grid;
@@ -950,28 +957,24 @@
 	height: 1.7rem;
 }
 
-.pm-state-title,
-.pm-empty-title,
-.pm-error-title {
+.pm-wrap .pm-state-title {
 	max-width: 30rem;
 	margin: 0;
+	color: var(--pm-ink);
 	font-family: inherit;
 	font-size: 1.15rem;
 	font-weight: 800;
 	letter-spacing: -.015em;
 }
 
-.pm-state-text,
-.pm-empty-text,
-.pm-error-text {
+.pm-state-text {
 	max-width: 34rem;
 	margin: .45rem 0 0;
 	color: var(--pm-muted);
 	font-size: .9rem;
 }
 
-.pm-state-actions,
-.pm-fallback-links {
+.pm-state-actions {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: center;
@@ -1014,7 +1017,7 @@
 
 .pm-credit::before {
 	content: "·";
-	margin-right: .4rem;
+	margin-inline-end: .4rem;
 }
 
 .pm-credit a {
@@ -1057,7 +1060,7 @@
 	.pm-controls-head { flex-direction: row; align-items: center; gap: .55rem; }
 	.pm-controls-head > div:first-child { min-width: 0; }
 	.pm-controls-hint { display: none; }
-	.pm-actions { width: auto; flex: 0 0 auto; }
+	.pm-actions { width: auto; flex: 0 1 auto; min-width: 0; justify-content: flex-end; }
 	.pm-actions .pm-btn { flex: 0 0 auto; padding-inline: .7rem; }
 	.pm-controls { margin: -1.8rem .55rem 0; padding: .82rem; }
 	.pm-filters { grid-template-columns: minmax(0, 1fr); gap: .45rem; margin-top: .55rem; }

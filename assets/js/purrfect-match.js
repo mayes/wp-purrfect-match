@@ -75,6 +75,8 @@
 
 	// Per-request page size when fetching the full set (kept small for safety).
 	var PAGE_SIZE = 24;
+	// Later pages are fetched a few at a time, not all at once.
+	var PAGE_CONCURRENCY = 4;
 
 	// Short-lived localStorage cache: be a good citizen of the shared Petfinder
 	// endpoint by not re-fetching identical listings on every page view.
@@ -186,6 +188,10 @@
 		} );
 	}
 
+	// Sentinel for an organization lookup that failed (network / GraphQL error),
+	// as opposed to one that cleanly returned no organization.
+	var ORG_LOOKUP_FAILED = {};
+
 	// Resolve a single display ID (or pass through a UUID) to an org UUID.
 	function resolveOrg( apiBase, displayId ) {
 		if ( isUUID( displayId ) ) {
@@ -204,8 +210,10 @@
 				return uuid;
 			} )
 			.catch( function () {
+				// A transient failure is not "not found": flag it so the caller
+				// can avoid caching a partial result for the full org set.
 				delete orgCache[ key ];
-				return null;
+				return ORG_LOOKUP_FAILED;
 			} );
 		orgCache[ key ] = p;
 		return p;
@@ -217,9 +225,11 @@
 				return resolveOrg( apiBase, id );
 			} )
 		).then( function ( list ) {
-			return list.filter( function ( x ) {
-				return !! x;
+			var uuids = list.filter( function ( x ) {
+				return typeof x === 'string' && x !== '';
 			} );
+			uuids.partial = list.indexOf( ORG_LOOKUP_FAILED ) !== -1;
+			return uuids;
 		} );
 	}
 
@@ -241,6 +251,48 @@
 		} catch ( e ) {
 			/* best-effort */
 		}
+	}
+
+	function delay( ms ) {
+		return new Promise( function ( resolve ) {
+			setTimeout( resolve, ms );
+		} );
+	}
+
+	// Promise.all over items with at most `limit` calls of fn in flight.
+	// Results keep input order; the first rejection rejects the whole set.
+	function mapLimit( items, limit, fn ) {
+		return new Promise( function ( resolve, reject ) {
+			var results = new Array( items.length );
+			var next = 0;
+			var done = 0;
+			var failed = false;
+			if ( ! items.length ) {
+				resolve( results );
+				return;
+			}
+			function run() {
+				if ( failed || next >= items.length ) {
+					return;
+				}
+				var i = next++;
+				Promise.resolve( fn( items[ i ] ) ).then( function ( r ) {
+					results[ i ] = r;
+					done++;
+					if ( done === items.length ) {
+						resolve( results );
+					} else {
+						run();
+					}
+				}, function ( e ) {
+					failed = true;
+					reject( e );
+				} );
+			}
+			for ( var k = 0; k < Math.min( limit, items.length ); k++ ) {
+				run();
+			}
+		} );
 	}
 
 	// One page. Parses the body even on a 4xx so an "unknown field" validation
@@ -272,6 +324,7 @@
 				function ( json ) {
 					if ( json && json.errors && json.errors.length ) {
 						var err = new Error( json.errors[ 0 ].message || 'GraphQL error' );
+						err.graphql = true;
 						if ( json.errors.some( function ( graphError ) {
 							return graphError && /Cannot query field\s+(?:["']description["']|description\b)/i.test( graphError.message || '' );
 						} ) ) {
@@ -334,9 +387,21 @@
 			var pages = Math.ceil( total / PAGE_SIZE );
 			var rest = [];
 			for ( var p = 1; p < pages; p++ ) {
-				rest.push( searchPage( cfg, orgUuids, p, useRich, sortMode ) );
+				rest.push( p );
 			}
-			return Promise.all( rest ).then( function ( results ) {
+			// A large org can need dozens of pages: run a few at a time, and
+			// retry a page once on a transport error (GraphQL errors are
+			// deterministic, so those fail fast and let the caller fall back).
+			return mapLimit( rest, PAGE_CONCURRENCY, function ( page ) {
+				return searchPage( cfg, orgUuids, page, useRich, sortMode ).catch( function ( e ) {
+					if ( e && e.graphql ) {
+						throw e;
+					}
+					return delay( 400 ).then( function () {
+						return searchPage( cfg, orgUuids, page, useRich, sortMode );
+					} );
+				} );
+			} ).then( function ( results ) {
 				results.forEach( function ( r ) {
 					animals = animals.concat( r.animals );
 				} );
@@ -379,13 +444,24 @@
 		} );
 	}
 
+	// Collapse runs of spaces but keep paragraph breaks (the story panel uses
+	// white-space: pre-line, and the shared cache preserves line breaks).
+	function tidyStory( text ) {
+		return text
+			.replace( /\r\n?/g, '\n' )
+			.replace( /[^\S\n]+/g, ' ' )
+			.replace( / ?\n ?/g, '\n' )
+			.replace( /\n{3,}/g, '\n\n' )
+			.trim();
+	}
+
 	// Map a raw GraphQL animal onto the flat shape the UI renders.
 	function normalize( a, cfg ) {
 		var phys = a.physical || {};
 		var breedObj = phys.breed || {};
 		var breed = breedObj.primary || '';
 		if ( breed && breedObj.mixed === true ) {
-			breed += ' Mix';
+			breed = String( ( cfg.strings && cfg.strings.breedMix ) || '{breed} Mix' ).split( '{breed}' ).join( breed );
 		}
 		var addr = ( a._contact && a._contact.address ) || {};
 		var base = cfg.petfinderUrl || '';
@@ -410,7 +486,7 @@
 			age: ( phys.age && phys.age.label ) || '',
 			city: addr.city || '',
 			state: addr.state || '',
-			bio: a.description ? decodeEntities( String( a.description ) ).replace( /\s+/g, ' ' ).trim() : '',
+			bio: a.description ? tidyStory( decodeEntities( String( a.description ) ) ) : '',
 			photo: a.primaryPhotoId ? ( photoBase + String( a.primaryPhotoId ).replace( /^\/+/, '' ) ) : '',
 			url: path ? ( base + path + '/details' ) : ( cfg.petfinderUrl || '#' )
 		};
@@ -442,6 +518,7 @@
 				return null;
 			}
 			if ( ( Date.now() - obj.t ) > CACHE_TTL_MS ) {
+				window.localStorage.removeItem( cacheKey( cfg ) );
 				return null;
 			}
 			return obj.cats;
@@ -454,11 +531,48 @@
 	// full CACHE_TTL_MS for this browser (the shared/server copy has its own,
 	// independent, server-side lifetime).
 	function writeCache( cfg, cats ) {
+		var key = cacheKey( cfg );
+		var value = JSON.stringify( { t: Date.now(), cats: cats } );
 		try {
-			window.localStorage.setItem( cacheKey( cfg ), JSON.stringify( { t: Date.now(), cats: cats } ) );
+			pruneCache( key, false );
+			window.localStorage.setItem( key, value );
 		} catch ( e ) {
-			/* storage unavailable / full / blocked — caching is best-effort. */
+			// Likely over quota: drop every other copy this plugin owns, retry once.
+			try {
+				pruneCache( key, true );
+				window.localStorage.setItem( key, value );
+			} catch ( e2 ) {
+				/* storage unavailable / full / blocked — caching is best-effort. */
+			}
 		}
+	}
+
+	// Remove this plugin's expired or older-format visitor-cache entries (or,
+	// with all=true, every entry except `keep`). Other sites' keys are untouched.
+	function pruneCache( keep, all ) {
+		var store = window.localStorage;
+		var doomed = [];
+		for ( var i = 0; i < store.length; i++ ) {
+			var k = store.key( i );
+			if ( ! k || k === keep || k.indexOf( 'pmcache:' ) !== 0 ) {
+				continue;
+			}
+			var stale = all || k.indexOf( CACHE_PREFIX ) !== 0;
+			if ( ! stale ) {
+				try {
+					var obj = JSON.parse( store.getItem( k ) );
+					stale = ! obj || typeof obj.t !== 'number' || ( Date.now() - obj.t ) > CACHE_TTL_MS;
+				} catch ( e ) {
+					stale = true;
+				}
+			}
+			if ( stale ) {
+				doomed.push( k );
+			}
+		}
+		doomed.forEach( function ( k ) {
+			store.removeItem( k );
+		} );
 	}
 
 	// Shared (server) cache: visitors read; only capable, logged-in users write.
@@ -626,12 +740,15 @@
 		// form can prefill which animal this application is for.
 		function adoptionLink( cat ) {
 			var base = cfg.adoptionFormUrl;
-			var sep = base.indexOf( '?' ) === -1 ? '?' : '&';
+			var hashAt = base.indexOf( '#' );
+			var hash = hashAt === -1 ? '' : base.slice( hashAt );
+			base = hashAt === -1 ? base : base.slice( 0, hashAt );
+			var sep = base.indexOf( '?' ) === -1 ? '?' : ( /[?&]$/.test( base ) ? '' : '&' );
 			var q = 'pet=' + encodeURIComponent( cat.name || '' );
 			if ( cat.id ) {
 				q += '&pet_id=' + encodeURIComponent( cat.id );
 			}
-			return base + sep + q;
+			return base + sep + q + hash;
 		}
 
 		function card( cat, index ) {
@@ -674,11 +791,13 @@
 
 			var front =
 				'<div class="pm-card-front">' +
-				'<a class="pm-media-link" href="' + url + '" target="_blank" rel="noopener noreferrer" aria-label="' + escapeHtml( message( 'viewProfile', 'View profile' ) + ': ' + rawName ) + '">' +
+				// Same destination as the name link, so keep it out of the tab
+				// order and the accessibility tree (one link per pet for AT).
+				'<a class="pm-media-link" href="' + url + '" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">' +
 				'<div class="pm-card-media">' + media + badgeHtml + '</div></a>' +
 				'<div class="pm-card-body">' +
 				'<div class="pm-card-head"><div>' +
-				'<h3 class="pm-name" id="' + nameId + '"><a class="pm-name-link" href="' + url + '" target="_blank" rel="noopener noreferrer">' + name + '</a></h3>' +
+				'<h4 class="pm-name" id="' + nameId + '"><a class="pm-name-link" href="' + url + '" target="_blank" rel="noopener noreferrer">' + name + newTab + '</a></h4>' +
 				breedHtml + locHtml +
 				'</div><div class="pm-card-mark pm-paw" aria-hidden="true">' + icon( 'paw' ) + '</div></div>' +
 				storyBtn +
@@ -1031,14 +1150,18 @@
 				if ( uuids.length === 0 ) {
 					throw new Error( 'We couldn’t find this shelter on Petfinder.' );
 				}
-				return fetchAllAnimals( cfg, uuids );
+				return fetchAllAnimals( cfg, uuids ).then( function ( animals ) {
+					animals.partial = !! uuids.partial;
+					return animals;
+				} );
 			} ).then( function ( animals ) {
 				var list = animals.map( function ( a ) {
 					return normalize( a, cfg );
 				} );
-				// A newest→default fallback isn't what this cache key promises;
-				// show it, but let the next view retry the requested order.
-				if ( ! animals.sortFallback ) {
+				// A newest→default fallback, or a set missing an organization
+				// whose lookup failed, isn't what this cache key promises; show
+				// it, but let the next view retry instead of caching it.
+				if ( ! animals.sortFallback && ! animals.partial ) {
 					writeCache( cfg, list );
 					if ( cfg.serverCache && cfg.canWrite && cfg.restUrl && list.length ) {
 						serverPut( cfg, list );
@@ -1111,12 +1234,56 @@
 				shuffle();
 			} else if ( action === 'clear' ) {
 				clear();
+				// Reset hides itself / the no-matches panel is replaced: land
+				// on the first filter instead of dropping focus to <body>.
+				if ( activeKeys.length && selects[ activeKeys[ 0 ] ].focus ) {
+					selects[ activeKeys[ 0 ] ].focus();
+				}
 			} else if ( action === 'retry' ) {
 				load();
+				focusGrid();
 			} else if ( action === 'more' ) {
+				var firstNew = renderedCount;
 				appendMore();
+				// The last batch hides "Load more"; continue at the first new pet.
+				if ( moreEl && moreEl.hidden && grid.children[ firstNew ] ) {
+					var link = grid.children[ firstNew ].querySelector( '.pm-name-link' );
+					if ( link ) {
+						link.focus();
+					}
+				}
 			}
 		} );
+
+		// The retry button is replaced by skeletons; keep focus in the widget.
+		function focusGrid() {
+			if ( grid.getAttribute( 'tabindex' ) === null ) {
+				grid.setAttribute( 'tabindex', '-1' );
+			}
+			if ( grid.focus ) {
+				grid.focus();
+			}
+		}
+
+		// Open/close a card's story and keep ARIA state + focus in sync. The
+		// activated button ends up visibility:hidden (front hides while the
+		// story shows, panel hides on close), which would drop focus to <body>,
+		// so hand focus to the counterpart control instead.
+		function setFlipped( cardEl, open ) {
+			cardEl.classList.toggle( 'is-flipped', open );
+			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
+			var story = cardEl.querySelector( '[data-pm-story]' );
+			if ( opener ) {
+				opener.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+			}
+			if ( story ) {
+				story.setAttribute( 'aria-hidden', open ? 'false' : 'true' );
+			}
+			var target = open ? cardEl.querySelector( '.pm-flip-close' ) : opener;
+			if ( target && target.focus ) {
+				target.focus();
+			}
+		}
 
 		// Flip cards to reveal/hide the pet story (delegated — cards are dynamic).
 		grid.addEventListener( 'click', function ( e ) {
@@ -1136,23 +1303,7 @@
 			if ( flipped === cardEl.classList.contains( 'is-flipped' ) ) {
 				return;
 			}
-			cardEl.classList.toggle( 'is-flipped', flipped );
-			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
-			var story = cardEl.querySelector( '[data-pm-story]' );
-			if ( opener ) {
-				opener.setAttribute( 'aria-expanded', flipped ? 'true' : 'false' );
-			}
-			if ( story ) {
-				story.setAttribute( 'aria-hidden', flipped ? 'false' : 'true' );
-			}
-			// The activated button ends up visibility:hidden (front hides while
-			// the story shows, panel hides on close), which would drop focus to
-			// <body>. Hand focus to the counterpart control instead so keyboard
-			// and screen-reader users keep their place.
-			var target = flipped ? cardEl.querySelector( '.pm-flip-close' ) : opener;
-			if ( target && target.focus ) {
-				target.focus();
-			}
+			setFlipped( cardEl, flipped );
 		} );
 
 		// Escape closes an open story and returns focus to its opener.
@@ -1164,18 +1315,7 @@
 			if ( ! cardEl ) {
 				return;
 			}
-			cardEl.classList.remove( 'is-flipped' );
-			var opener = cardEl.querySelector( '[data-pm-flip="open"]' );
-			var story = cardEl.querySelector( '[data-pm-story]' );
-			if ( story ) {
-				story.setAttribute( 'aria-hidden', 'true' );
-			}
-			if ( opener ) {
-				opener.setAttribute( 'aria-expanded', 'false' );
-				if ( opener.focus ) {
-					opener.focus();
-				}
-			}
+			setFlipped( cardEl, false );
 		} );
 
 		load();
