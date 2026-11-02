@@ -116,8 +116,10 @@ class Purrfect_Match {
 				'purrfect-match-admin',
 				'PM_ADMIN',
 				array(
-					'copied'     => __( 'Copied!', 'purrfect-match' ),
-					'copyFailed' => __( 'Copy failed', 'purrfect-match' ),
+					'copied'       => __( 'Copied!', 'purrfect-match' ),
+					'copyFailed'   => __( 'Copy failed', 'purrfect-match' ),
+					'previewOrg'   => __( 'Your rescue', 'purrfect-match' ),
+					'previewTitle' => __( 'Find your purr-fect match', 'purrfect-match' ),
 				)
 			);
 			return;
@@ -407,17 +409,23 @@ class Purrfect_Match {
 			'breed'              => __( 'Breed', 'purrfect-match' ),
 			'size'               => __( 'Size', 'purrfect-match' ),
 			'age'                => __( 'Age', 'purrfect-match' ),
+			/* translators: {name} is replaced with the pet's name at runtime; keep the token unchanged. */
 			'readStory'          => __( 'Read {name}\'s story', 'purrfect-match' ),
 			'readStoryShort'     => __( 'Read story', 'purrfect-match' ),
+			/* translators: {name} is replaced with the pet's name at runtime; keep the token unchanged. */
 			'hideStory'          => __( 'Hide {name}\'s story', 'purrfect-match' ),
 			'back'               => __( 'Back', 'purrfect-match' ),
 			'apply'              => __( 'Apply to adopt', 'purrfect-match' ),
 			'viewProfile'        => __( 'View profile', 'purrfect-match' ),
+			/* translators: {name} is replaced with the pet's name at runtime; keep the token unchanged. */
 			'meetPet'            => __( 'Meet {name}', 'purrfect-match' ),
 			'newTab'             => __( '(opens in a new tab)', 'purrfect-match' ),
+			/* translators: {name} is replaced with the pet's name at runtime; keep the token unchanged. */
 			'photoOf'            => __( 'Photo of {name}', 'purrfect-match' ),
 			'filterTip'          => __( 'Choose a filter to narrow the list.', 'purrfect-match' ),
+			/* translators: {label} is replaced with a filter value at runtime; keep the token unchanged. */
 			'removeFilter'       => __( 'Remove {label} filter', 'purrfect-match' ),
+			/* translators: {shown} and {total} are replaced with numbers at runtime; keep the tokens unchanged. */
 			'showingCount'       => __( 'Showing {shown} of {total}', 'purrfect-match' ),
 			'noMatchesTitle'     => __( 'No pets match those filters', 'purrfect-match' ),
 			'noMatchesText'      => __( 'Try removing a filter to see more friends.', 'purrfect-match' ),
@@ -502,7 +510,8 @@ class Purrfect_Match {
 		$shelter = array(
 			'@context' => 'https://schema.org',
 			'@type'    => 'AnimalShelter',
-			'name'     => (string) $atts['org_name'],
+			// A shortcode org_name override bypasses option sanitization.
+			'name'     => sanitize_text_field( (string) $atts['org_name'] ),
 		);
 		if ( ! empty( $atts['org_website'] ) ) {
 			$shelter['url'] = esc_url_raw( $atts['org_website'] );
@@ -510,7 +519,9 @@ class Purrfect_Match {
 
 		$this->schema_emitted = true;
 
-		return (string) wp_json_encode( $shelter );
+		// Hex-escape < > & so nothing in the data can end or alter the
+		// surrounding <script type="application/ld+json"> element.
+		return (string) wp_json_encode( $shelter, JSON_HEX_TAG | JSON_HEX_AMP );
 	}
 
 	/**

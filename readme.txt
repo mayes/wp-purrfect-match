@@ -4,7 +4,7 @@ Tags: petfinder, adoption, pets, animal shelter, rescue
 Requires at least: 5.6
 Tested up to: 6.8
 Requires PHP: 7.0
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -125,6 +125,18 @@ subject to Petfinder's terms and policies:
 
 == Changelog ==
 
+= 1.8.1 =
+* Fix: the default (non-newest) request is back to the exact production-proven Petfinder query; only `sort="newest"` uses the newer sort variable, and it still falls back safely.
+* Fix: if a newest-first request fails and falls back to the default order, that list is no longer cached as "newest" (locally or in the shared cache), so the next view retries the requested order.
+* Fix: pets that shift across a page boundary while results load are no longer shown twice.
+* Fix: the story panel crossfades again when opening and closing (restores the 1.6.4 behavior lost in the 1.7.0 redesign); a repeated "Read story" key press can no longer close it.
+* Fix: a single filtered result no longer stretches across the whole row.
+* Fix: the widget no longer collapses to zero width inside block-editor rows and other shrink-to-fit layouts.
+* Fix: the "View profile" link keeps its underline, theme link colours no longer recolour pet names and fallback links, and the footer text meets WCAG AA contrast.
+* Accessibility: focus rings are visible on the photo link and the story text; the photo zoom no longer sticks on touch devices.
+* Admin: the settings-saved notice no longer appears twice; translator notes added for runtime placeholders; preview fallbacks are translatable; the Explorer reports non-JSON responses clearly.
+* Hardening: the AnimalShelter JSON-LD name is sanitized and tag-escaped.
+
 = 1.8.0 =
 * New: shortcode instances can use `sort="newest"` to request recently published pets first, including compact homepage teasers.
 * Compatibility: absent, `default`, and invalid sort values preserve the established Petfinder ordering.
@@ -205,6 +217,9 @@ subject to Petfinder's terms and policies:
 * Initial release: shortcode, settings page, client-side Petfinder GraphQL data layer, and the filterable "Find your purr-fect match" grid.
 
 == Upgrade Notice ==
+
+= 1.8.1 =
+Fixes from a full code review of 1.7–1.8: safer default Petfinder request, no mis-cached newest fallback, restored story crossfade, and several layout and accessibility fixes.
 
 = 1.8.0 =
 Adds an opt-in `sort="newest"` shortcode mode for recently published pets while preserving existing shortcode order by default.

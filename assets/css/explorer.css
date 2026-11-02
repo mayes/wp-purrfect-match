@@ -128,7 +128,9 @@
 }
 
 .pm-explorer .pmx-presets .button.is-selected {
+	border-color: var(--pmx-brand);
 	border-color: color-mix(in srgb, var(--pmx-brand) 55%, #9f968d);
+	background: #f6f1ec;
 	background: color-mix(in srgb, var(--pmx-brand) 10%, #fff);
 	color: var(--pmx-ink);
 }

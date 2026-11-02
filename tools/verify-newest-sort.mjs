@@ -100,7 +100,11 @@ function classList() {
 		add: function ( value ) { values.add( value ); },
 		remove: function ( value ) { values.delete( value ); },
 		contains: function ( value ) { return values.has( value ); },
-		toggle: function ( value ) {
+		toggle: function ( value, force ) {
+			if ( force !== undefined ) {
+				if ( force ) { values.add( value ); } else { values.delete( value ); }
+				return !! force;
+			}
 			if ( values.has( value ) ) {
 				values.delete( value );
 				return false;
@@ -373,13 +377,14 @@ function cachedCats( result ) {
 	return JSON.parse( result.storage.getItem( cacheKey( result ) ) ).cats;
 }
 
-// Frozen 1.7.1 page-zero request, with only the mandated 1.8.0 substitution:
-// the former inline animal_type/desc sort is now the allow-listed $sort
-// variable. Exact document and variables comparison catches field nesting,
-// argument binding, variable-type, filter, pagination, and ordering drift.
-const legacy171DefaultQueryWithSortVariable =
-	'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!, $sort: [SortInput!]!) {' +
-	'  searchAnimal(pagination: $pagination, sort: $sort, filters: $filters) {' +
+// Frozen 1.7.1 page-zero request. Default mode deliberately still sends this
+// exact production-proven document — inline animal_type/desc sort, no $sort
+// variable — so only opt-in newest mode depends on the variable-typed form.
+// Exact document and variables comparison catches field nesting, argument
+// binding, filter, pagination, and ordering drift.
+const legacy171DefaultQuery =
+	'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!) {' +
+	'  searchAnimal(pagination: $pagination, sort: { field: "animal_type", order: "desc" }, filters: $filters) {' +
 	'    totalCount' +
 	'    animals {' +
 	'      animalId' +
@@ -391,9 +396,9 @@ const legacy171DefaultQueryWithSortVariable =
 	'    }' +
 	'  }' +
 	'}';
-const legacy171RichDefaultQueryWithSortVariable =
-	'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!, $sort: [SortInput!]!) {' +
-	'  searchAnimal(pagination: $pagination, sort: $sort, filters: $filters) {' +
+const legacy171RichDefaultQuery =
+	'query SearchAnimal($pagination: PaginationInfoInput!, $filters: AnimalSearchFiltersInput!) {' +
+	'  searchAnimal(pagination: $pagination, sort: { field: "animal_type", order: "desc" }, filters: $filters) {' +
 	'    totalCount' +
 	'    animals {' +
 	'      animalId' +
@@ -407,7 +412,7 @@ const legacy171RichDefaultQueryWithSortVariable =
 	'  }' +
 	'}';
 const legacy171DefaultPayload = {
-	query: legacy171DefaultQueryWithSortVariable,
+	query: legacy171DefaultQuery,
 	variables: {
 		isConsumer: true,
 		filters: {
@@ -415,19 +420,18 @@ const legacy171DefaultPayload = {
 			adoption_status: 'adoptable',
 			organization_id: [ organizationId ]
 		},
-		pagination: { fromPage: 0, pageSize: 24 },
-		sort: defaultSort
+		pagination: { fromPage: 0, pageSize: 24 }
 	}
 };
 const legacy171RichDefaultPayload = {
-	query: legacy171RichDefaultQueryWithSortVariable,
+	query: legacy171RichDefaultQuery,
 	variables: legacy171DefaultPayload.variables
 };
 
 function assertDefaultRequest( call ) {
-	assert.deepEqual( call.payload.variables.sort, defaultSort );
-	assert.match( call.payload.query, /\$sort: \[SortInput!\]!/ );
-	assert.match( call.payload.query, /sort: \$sort/ );
+	assert.equal( call.payload.variables.sort, undefined, 'default mode must not send a $sort variable' );
+	assert.doesNotMatch( call.payload.query, /\$sort/ );
+	assert.match( call.payload.query, /sort: \{ field: "animal_type", order: "desc" \}/ );
 	assert.doesNotMatch( call.payload.query, /meta \{ publishTime \}/ );
 	assert.doesNotMatch( call.payload.query, /publish_time/ );
 }
@@ -654,7 +658,7 @@ async function testLaterNewestPageRestartsDefaultOrdering() {
 		sort: 'newest',
 		limit: 30,
 		respond: function ( call ) {
-			const isNewest = call.payload.variables.sort[ 0 ].field === 'publish_time';
+			const isNewest = !! ( call.payload.variables.sort && call.payload.variables.sort[ 0 ].field === 'publish_time' );
 			const fromPage = call.payload.variables.pagination.fromPage;
 			if ( isNewest && fromPage === 0 ) {
 				return searchResponse( newestAnimals.slice( 0, 24 ), 30 );
@@ -671,11 +675,18 @@ async function testLaterNewestPageRestartsDefaultOrdering() {
 	assertNewestRequest( calls[ 1 ] );
 	assertDefaultRequest( calls[ 2 ] );
 	assertDefaultRequest( calls[ 3 ] );
-	const cats = cachedCats( result );
-	assert.equal( cats.length, 30 );
-	assert.equal( cats[ 0 ].name, 'Default restart 01' );
-	assert.equal( cats[ 29 ].name, 'Default restart 30' );
-	assert.doesNotMatch( JSON.stringify( cats ), /Newest page/, 'partial newest results survived the fallback restart' );
+	// The default-ordered restart renders, but must NOT be cached under the
+	// newest key (locally or in the shared server cache), or it would be served
+	// as "newest" for the full cache lifetime after a transient failure.
+	assert.match( result.grid.innerHTML, /Default restart 01/ );
+	assert.doesNotMatch( result.grid.innerHTML, /Newest page/, 'partial newest results survived the fallback restart' );
+	const cacheEntries = result.storage.keys().filter( function ( key ) {
+		return key.indexOf( 'pmcache:v2:' ) === 0;
+	} );
+	assert.equal( cacheEntries.length, 0, 'fallback results were cached under the newest key' );
+	assert.equal( result.calls.filter( function ( call ) {
+		return call.method === 'POST' && call.url.indexOf( 'purrfect-match/v1/pets' ) !== -1;
+	} ).length, 0, 'fallback results were written to the shared server cache' );
 	assert.equal( result.errors.length, 0 );
 }
 
@@ -694,6 +705,7 @@ function testStoryKeyboardBehavior( result ) {
 	const story = element();
 	const close = element();
 	const openButton = element();
+	openButton.setAttribute( 'data-pm-flip', 'open' );
 	let prevented = false;
 
 	cardElement.querySelector = function ( selector ) {
@@ -717,6 +729,8 @@ function testStoryKeyboardBehavior( result ) {
 	assert.equal( opener.getAttribute( 'aria-expanded' ), 'true', 'story opener state was not announced' );
 	assert.equal( story.getAttribute( 'aria-hidden' ), 'false', 'story region stayed hidden' );
 	assert.equal( close.focused, true, 'opening a story did not move focus to its close control' );
+	result.grid.dispatch( 'click', { preventDefault: function () {}, target: openButton } );
+	assert.equal( cardElement.classList.contains( 'is-flipped' ), true, 'a repeated open activation toggled the story closed' );
 
 	const escapeTarget = {
 		closest: function ( selector ) {
